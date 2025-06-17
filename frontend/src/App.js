@@ -1,0 +1,103 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './App.css';
+
+// Layouts
+import MainLayout from './layouts/MainLayout';
+import AuthLayout from './layouts/AuthLayout';
+
+// Pages
+import Home from './pages/Home';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import Products from './pages/Products';
+import ProductDetail from './pages/ProductDetail';
+import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
+import Profile from './pages/user/Profile';
+import OrderHistory from './pages/user/OrderHistory';
+import PointHistory from './pages/user/PointHistory';
+import Tutorial from './pages/Tutorial';
+
+// Admin Pages
+import AdminDashboard from './pages/admin/Dashboard';
+import AdminUsers from './pages/admin/Users';
+import AdminProducts from './pages/admin/Products';
+import AdminOrders from './pages/admin/Orders';
+
+// Context Provider
+import { AuthProvider } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const isAuthenticated = localStorage.getItem('token');
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
+
+// Admin Route Component
+const AdminRoute = ({ children }) => {
+  const isAuthenticated = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  return isAuthenticated && user.role === 'admin' ? children : <Navigate to="/" />;
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <CartProvider>
+        <Router>
+          <Routes>
+            {/* Auth Routes */}
+            <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
+            <Route path="/register" element={<AuthLayout><Register /></AuthLayout>} />
+            
+            {/* Main Routes */}
+            <Route path="/" element={<MainLayout><Home /></MainLayout>} />
+            <Route path="/products" element={<MainLayout><Products /></MainLayout>} />
+            <Route path="/products/:id" element={<MainLayout><ProductDetail /></MainLayout>} />
+            <Route path="/cart" element={<MainLayout><Cart /></MainLayout>} />
+            <Route path="/checkout" element={
+              <MainLayout>
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              </MainLayout>
+            } />
+            
+            {/* User Routes */}
+            <Route path="/user/profile" element={
+              <MainLayout>
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              </MainLayout>
+            } />
+            <Route path="/user/orders" element={
+              <MainLayout>
+                <ProtectedRoute>
+                  <OrderHistory />
+                </ProtectedRoute>
+              </MainLayout>
+            } />
+            
+            {/* Admin Routes */}
+            <Route path="/admin/*" element={
+              <MainLayout>
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              </MainLayout>
+            } />
+            
+            {/* Fallback Route */}
+            <Route path="*" element={<MainLayout><Navigate to="/" /></MainLayout>} />
+          </Routes>
+        </Router>
+      </CartProvider>
+    </AuthProvider>
+  );
+}
+
+export default App;
