@@ -47,12 +47,12 @@ const OrderHistory = () => {
   // Filter orders based on active tab
   const filteredOrders = orders.filter(order => {
     if (activeTab === 'all') return true;
-    if (activeTab === 'pending' && order.payment_status === 'pending') return true;
-    if (activeTab === 'paid' && order.payment_status === 'paid') return true;
-    if (activeTab === 'processing' && order.order_status === 'processing') return true;
-    if (activeTab === 'shipped' && order.order_status === 'shipped') return true;
-    if (activeTab === 'delivered' && order.order_status === 'delivered') return true;
-    if (activeTab === 'cancelled' && order.order_status === 'cancelled') return true;
+    if (activeTab === 'pending' && order.status === 'pending') return true;
+    if (activeTab === 'paid' && order.status === 'paid') return true;
+    if (activeTab === 'processing' && order.status === 'processing') return true;
+    if (activeTab === 'shipped' && order.status === 'shipped') return true;
+    if (activeTab === 'delivered' && order.status === 'delivered') return true;
+    if (activeTab === 'cancelled' && order.status === 'cancelled') return true;
     return false;
   });
 
@@ -116,22 +116,28 @@ const OrderHistory = () => {
   };
 
   // Get badge variant based on status
-  const getPaymentBadgeVariant = (status) => {
+  const getStatusBadgeVariant = (status) => {
     switch (status) {
       case 'paid': return 'success';
       case 'pending': return 'warning';
-      case 'failed': return 'danger';
-      default: return 'secondary';
-    }
-  };
-
-  const getOrderBadgeVariant = (status) => {
-    switch (status) {
       case 'processing': return 'info';
       case 'shipped': return 'primary';
       case 'delivered': return 'success';
       case 'cancelled': return 'danger';
       default: return 'secondary';
+    }
+  };
+
+  // Get status display text
+  const getStatusDisplayText = (status) => {
+    switch (status) {
+      case 'pending': return 'Menunggu Pembayaran';
+      case 'paid': return 'Sudah Dibayar';
+      case 'processing': return 'Diproses';
+      case 'shipped': return 'Dikirim';
+      case 'delivered': return 'Selesai';
+      case 'cancelled': return 'Dibatalkan';
+      default: return status;
     }
   };
 
@@ -185,8 +191,7 @@ const OrderHistory = () => {
                   <th>ID Pesanan</th>
                   <th>Tanggal</th>
                   <th>Total</th>
-                  <th>Status Pembayaran</th>
-                  <th>Status Pesanan</th>
+                  <th>Status</th>
                   <th>Aksi</th>
                 </tr>
               </thead>
@@ -195,19 +200,10 @@ const OrderHistory = () => {
                   <tr key={order.id}>
                     <td>{order.order_number}</td>
                     <td>{new Date(order.createdAt).toLocaleDateString('id-ID')}</td>
-                    <td>Rp {parseFloat(order.total_amount).toLocaleString('id-ID')}</td>
+                    <td>Rp {parseFloat(order.total).toLocaleString('id-ID')}</td>
                     <td>
-                      <Badge bg={getPaymentBadgeVariant(order.payment_status)}>
-                        {order.payment_status === 'pending' ? 'Menunggu Pembayaran' : 
-                         order.payment_status === 'paid' ? 'Sudah Dibayar' : 'Gagal'}
-                      </Badge>
-                    </td>
-                    <td>
-                      <Badge bg={getOrderBadgeVariant(order.order_status)}>
-                        {order.order_status === 'pending' ? 'Menunggu Pembayaran' : 
-                         order.order_status === 'processing' ? 'Diproses' : 
-                         order.order_status === 'shipped' ? 'Dikirim' : 
-                         order.order_status === 'delivered' ? 'Selesai' : 'Dibatalkan'}
+                      <Badge bg={getStatusBadgeVariant(order.status)}>
+                        {getStatusDisplayText(order.status)}
                       </Badge>
                     </td>
                     <td>
@@ -220,7 +216,7 @@ const OrderHistory = () => {
                         <FontAwesomeIcon icon={faEye} /> Detail
                       </Button>
                       
-                      {order.payment_status === 'pending' && (
+                      {order.status === 'pending' && (
                         <Button
                           variant="outline-success"
                           size="sm"
@@ -265,7 +261,7 @@ const OrderHistory = () => {
                   <strong>ID Pesanan:</strong> {selectedOrder?.order_number}
                 </p>
                 <p>
-                  <strong>Total Pembayaran:</strong> Rp {selectedOrder?.total_amount ? parseFloat(selectedOrder.total_amount).toLocaleString('id-ID') : '0'}
+                  <strong>Total Pembayaran:</strong> Rp {selectedOrder?.total ? parseFloat(selectedOrder.total).toLocaleString('id-ID') : '0'}
                 </p>
               </div>
               
@@ -319,19 +315,9 @@ const OrderHistory = () => {
                 <p><strong>ID Pesanan:</strong> {orderDetails.order_number}</p>
                 <p><strong>Tanggal:</strong> {new Date(orderDetails.createdAt).toLocaleString('id-ID')}</p>
                 <p>
-                  <strong>Status Pembayaran:</strong>{' '}
-                  <Badge bg={getPaymentBadgeVariant(orderDetails.payment_status)}>
-                    {orderDetails.payment_status === 'pending' ? 'Menunggu Pembayaran' : 
-                     orderDetails.payment_status === 'paid' ? 'Sudah Dibayar' : 'Gagal'}
-                  </Badge>
-                </p>
-                <p>
-                  <strong>Status Pesanan:</strong>{' '}
-                  <Badge bg={getOrderBadgeVariant(orderDetails.order_status)}>
-                    {orderDetails.order_status === 'pending' ? 'Menunggu Pembayaran' : 
-                     orderDetails.order_status === 'processing' ? 'Diproses' : 
-                     orderDetails.order_status === 'shipped' ? 'Dikirim' : 
-                     orderDetails.order_status === 'delivered' ? 'Selesai' : 'Dibatalkan'}
+                  <strong>Status:</strong>{' '}
+                  <Badge bg={getStatusBadgeVariant(orderDetails.status)}>
+                    {getStatusDisplayText(orderDetails.status)}
                   </Badge>
                 </p>
                 {orderDetails.tracking_number && (
@@ -342,12 +328,10 @@ const OrderHistory = () => {
               <div className="mb-4">
                 <h5>Informasi Pengiriman</h5>
                 <hr />
-                <p><strong>Nama:</strong> {orderDetails.shipping_name}</p>
                 <p><strong>Alamat:</strong> {orderDetails.shipping_address}</p>
                 <p><strong>Kota:</strong> {orderDetails.shipping_city}</p>
                 <p><strong>Provinsi:</strong> {orderDetails.shipping_province}</p>
                 <p><strong>Kode Pos:</strong> {orderDetails.shipping_postal_code}</p>
-                <p><strong>Telepon:</strong> {orderDetails.shipping_phone}</p>
               </div>
               
               <div className="mb-4">
@@ -367,22 +351,23 @@ const OrderHistory = () => {
                       <tr key={item.id}>
                         <td>
                           {item.product?.name || 'Produk'}
-                          {item.size && item.color && (
+                          {item.variation && (
                             <small className="d-block text-muted">
-                              {item.size} - {item.color}
+                              {item.variation.size && item.variation.color ? 
+                                `${item.variation.size} - ${item.variation.color}` : ''}
                             </small>
                           )}
                         </td>
                         <td>Rp {parseFloat(item.price).toLocaleString('id-ID')}</td>
                         <td>{item.quantity}</td>
-                        <td>Rp {(parseFloat(item.price) * item.quantity).toLocaleString('id-ID')}</td>
+                        <td>Rp {parseFloat(item.total).toLocaleString('id-ID')}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr>
                       <td colSpan="3" className="text-end"><strong>Subtotal:</strong></td>
-                      <td>Rp {(parseFloat(orderDetails.total_amount) - parseFloat(orderDetails.shipping_cost)).toLocaleString('id-ID')}</td>
+                      <td>Rp {parseFloat(orderDetails.subtotal).toLocaleString('id-ID')}</td>
                     </tr>
                     <tr>
                       <td colSpan="3" className="text-end"><strong>Biaya Pengiriman:</strong></td>
@@ -390,7 +375,7 @@ const OrderHistory = () => {
                     </tr>
                     <tr>
                       <td colSpan="3" className="text-end"><strong>Total:</strong></td>
-                      <td><strong>Rp {parseFloat(orderDetails.total_amount).toLocaleString('id-ID')}</strong></td>
+                      <td>Rp {parseFloat(orderDetails.total).toLocaleString('id-ID')}</td>
                     </tr>
                   </tfoot>
                 </Table>
@@ -402,7 +387,7 @@ const OrderHistory = () => {
                   <hr />
                   <div className="text-center">
                     <img 
-                      src={`/${orderDetails.payment_proof}`} 
+                      src={`/uploads/${orderDetails.payment_proof}`} 
                       alt="Bukti Pembayaran" 
                       className="img-fluid" 
                       style={{ maxHeight: '300px' }}
@@ -410,18 +395,10 @@ const OrderHistory = () => {
                   </div>
                 </div>
               )}
-              
-              {orderDetails.notes && (
-                <div className="mb-4">
-                  <h5>Catatan</h5>
-                  <hr />
-                  <p>{orderDetails.notes}</p>
-                </div>
-              )}
             </div>
           ) : (
             <Alert variant="danger">
-              Gagal memuat detail pesanan. Silakan coba lagi.
+              Gagal memuat detail pesanan.
             </Alert>
           )}
         </Modal.Body>

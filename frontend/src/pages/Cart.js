@@ -16,7 +16,7 @@ const Cart = () => {
   // Group cart items by category
   useEffect(() => {
     const grouped = cartItems.reduce((acc, item) => {
-      const categoryId = item.categoryId;
+      const categoryId = item.product?.category_id || 'uncategorized';
       if (!acc[categoryId]) {
         acc[categoryId] = [];
       }
@@ -43,9 +43,19 @@ const Cart = () => {
     setProcessingItem(null);
   };
 
+  // Get price for an item
+  const getItemPrice = (item) => {
+    return item.variation ? 
+      (item.variation.price || item.product.price) : 
+      item.product.price;
+  };
+
   // Calculate subtotal for a category
   const getCategorySubtotal = (items) => {
-    return items.reduce((total, item) => total + (parseFloat(item.price) * item.quantity), 0);
+    return items.reduce((total, item) => {
+      const price = getItemPrice(item);
+      return total + (parseFloat(price) * item.quantity);
+    }, 0);
   };
 
   if (!currentUser) {
@@ -105,7 +115,7 @@ const Cart = () => {
         return (
           <Card key={categoryId} className="mb-4 shadow-sm">
             <Card.Header>
-              <h5 className="mb-0">Kategori: {items[0]?.category?.name || 'Produk'}</h5>
+              <h5 className="mb-0">Kategori: {items[0]?.product?.category?.name || 'Produk'}</h5>
             </Card.Header>
             <Card.Body>
               <Table responsive>
@@ -119,51 +129,55 @@ const Cart = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <img 
-                            src={item.product?.image ? `/${item.product.image}` : '/placeholder.jpg'} 
-                            alt={item.product?.name} 
-                            style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '10px' }}
-                          />
-                          <div>
-                            <Link to={`/products/${item.productId}`} className="text-decoration-none">
-                              {item.product?.name || 'Produk'}
-                            </Link>
-                            {item.size && item.color && (
-                              <small className="d-block text-muted">
-                                {item.size} - {item.color}
-                              </small>
-                            )}
+                  {items.map((item) => {
+                    const itemPrice = getItemPrice(item);
+                    return (
+                      <tr key={item.id}>
+                        <td>
+                          <div className="d-flex align-items-center">
+                            <img 
+                              src={item.product?.image ? `/${item.product.image}` : '/placeholder.jpg'} 
+                              alt={item.product?.name} 
+                              style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '10px' }}
+                            />
+                            <div>
+                              <Link to={`/products/${item.product_id}`} className="text-decoration-none">
+                                {item.product?.name || 'Produk'}
+                              </Link>
+                              {item.variation && (
+                                <small className="d-block text-muted">
+                                  {item.variation.size && item.variation.color ? 
+                                    `${item.variation.size} - ${item.variation.color}` : ''}
+                                </small>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td>Rp {parseFloat(item.price).toLocaleString('id-ID')}</td>
-                      <td style={{ width: '120px' }}>
-                        <Form.Control
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value))}
-                          disabled={processingItem === item.id}
-                          size="sm"
-                        />
-                      </td>
-                      <td>Rp {(parseFloat(item.price) * item.quantity).toLocaleString('id-ID')}</td>
-                      <td>
-                        <Button 
-                          variant="danger" 
-                          size="sm"
-                          onClick={() => handleRemoveItem(item.id)}
-                          disabled={processingItem === item.id}
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td>Rp {parseFloat(itemPrice).toLocaleString('id-ID')}</td>
+                        <td style={{ width: '120px' }}>
+                          <Form.Control
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value))}
+                            disabled={processingItem === item.id}
+                            size="sm"
+                          />
+                        </td>
+                        <td>Rp {(parseFloat(itemPrice) * item.quantity).toLocaleString('id-ID')}</td>
+                        <td>
+                          <Button 
+                            variant="danger" 
+                            size="sm"
+                            onClick={() => handleRemoveItem(item.id)}
+                            disabled={processingItem === item.id}
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
                 <tfoot>
                   <tr>
@@ -198,19 +212,20 @@ const Cart = () => {
               </div>
               <div className="d-flex justify-content-between">
                 <span>Total Harga:</span>
-                <span><strong>Rp {getSubtotal().toLocaleString('id-ID')}</strong></span>
+                <span className="fw-bold">Rp {getSubtotal().toLocaleString('id-ID')}</span>
               </div>
-              <div className="text-muted mt-2">
-                <small>* Checkout dilakukan per kategori</small>
+              <div className="d-grid mt-3">
+                <Button 
+                  as={Link} 
+                  to="/checkout" 
+                  variant="primary" 
+                  size="lg"
+                >
+                  Checkout Semua
+                </Button>
               </div>
             </Card.Body>
           </Card>
-          <div className="d-flex justify-content-between mt-3">
-            <Button as={Link} to="/products" variant="outline-primary">
-              <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
-              Lanjutkan Belanja
-            </Button>
-          </div>
         </Col>
       </Row>
     </div>

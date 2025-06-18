@@ -36,7 +36,7 @@ export const CartProvider = ({ children }) => {
   };
 
   // Add item to cart
-  const addToCart = async (product_id, quantity, variationId = null, size = null, color = null) => {
+  const addToCart = async (product_id, quantity, variation_id = null) => {
     try {
       setLoading(true);
       setError(null);
@@ -44,9 +44,7 @@ export const CartProvider = ({ children }) => {
       const response = await axios.post('/api/cart', {
         product_id,
         quantity,
-        variationId,
-        size,
-        color
+        variation_id
       });
       
       await fetchCartItems(); // Refresh cart items
@@ -128,7 +126,10 @@ export const CartProvider = ({ children }) => {
 
   // Calculate subtotal
   const getSubtotal = () => {
-    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return cartItems.reduce((total, item) => {
+      const price = item.variation ? (item.variation.price || item.product.price) : item.product.price;
+      return total + (price * item.quantity);
+    }, 0);
   };
 
   return (

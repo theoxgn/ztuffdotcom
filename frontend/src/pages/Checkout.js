@@ -41,8 +41,6 @@ const Checkout = () => {
 
   // Validation schema
   const checkoutSchema = Yup.object({
-    shipping_name: Yup.string()
-      .required('Nama penerima harus diisi'),
     shipping_address: Yup.string()
       .required('Alamat pengiriman harus diisi'),
     shipping_city: Yup.string()
@@ -51,8 +49,6 @@ const Checkout = () => {
       .required('Provinsi harus diisi'),
     shipping_postal_code: Yup.string()
       .required('Kode pos harus diisi'),
-    shipping_phone: Yup.string()
-      .required('Nomor telepon harus diisi'),
     payment_method_id: Yup.string()
       .required('Metode pembayaran harus dipilih'),
     notes: Yup.string()
@@ -95,10 +91,7 @@ const Checkout = () => {
         items: cartItems.map(item => ({
           product_id: item.product_id,
           variation_id: item.variation_id || null,
-          quantity: item.quantity,
-          price: item.price,
-          size: item.size || null,
-          color: item.color || null
+          quantity: item.quantity
         }))
       };
       
@@ -206,12 +199,10 @@ const Checkout = () => {
               
               <Formik
                 initialValues={{
-                  shipping_name: currentUser?.name || '',
                   shipping_address: currentUser?.address || '',
                   shipping_city: currentUser?.city || '',
                   shipping_province: currentUser?.province || '',
                   shipping_postal_code: currentUser?.postal_code || '',
-                  shipping_phone: currentUser?.phone || '',
                   payment_method_id: '',
                   notes: ''
                 }}
@@ -236,41 +227,6 @@ const Checkout = () => {
                   
                   return (
                     <Form onSubmit={handleSubmit}>
-                      <Row>
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Nama Penerima</Form.Label>
-                            <Form.Control
-                              type="text"
-                              name="shipping_name"
-                              value={values.shipping_name}
-                              onChange={handleChange}
-                              onBlur={handleBlur}
-                              isInvalid={touched.shipping_name && errors.shipping_name}
-                            />
-                            <Form.Control.Feedback type="invalid">
-                              {errors.shipping_name}
-                            </Form.Control.Feedback>
-                          </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                          <Form.Group className="mb-3">
-                            <Form.Label>Nomor Telepon</Form.Label>
-                            <Form.Control
-                              type="text"
-                              name="shipping_phone"
-                              value={values.shipping_phone}
-                              onChange={handleChange}
-                              onBlur={handleBlur}
-                              isInvalid={touched.shipping_phone && errors.shipping_phone}
-                            />
-                            <Form.Control.Feedback type="invalid">
-                              {errors.shipping_phone}
-                            </Form.Control.Feedback>
-                          </Form.Group>
-                        </Col>
-                      </Row>
-                      
                       <Form.Group className="mb-3">
                         <Form.Label>Alamat</Form.Label>
                         <Form.Control
@@ -401,58 +357,49 @@ const Checkout = () => {
             <Card.Body>
               <h4 className="mb-3">Ringkasan Pesanan</h4>
               
-              <div className="mb-3">
-                {cartItems.map(item => (
-                  <div key={item.id} className="d-flex justify-content-between mb-2">
-                    <div>
-                      <span className="fw-bold">{item.quantity}x</span> {item.product?.name || 'Produk'}
-                      {item.size && item.color && (
-                        <small className="d-block text-muted">
-                          {item.size} - {item.color}
-                        </small>
-                      )}
-                    </div>
-                    <div>
-                      Rp {(item.price * item.quantity).toLocaleString('id-ID')}
-                    </div>
-                  </div>
-                ))}
+              <Table responsive className="mb-3">
+                <thead>
+                  <tr>
+                    <th>Produk</th>
+                    <th className="text-end">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cartItems.map(item => (
+                    <tr key={item.id}>
+                      <td>
+                        {item.product?.name} x {item.quantity}
+                        {item.variation && (
+                          <small className="d-block text-muted">
+                            {item.variation.size && item.variation.color ? 
+                              `${item.variation.size} - ${item.variation.color}` : ''}
+                          </small>
+                        )}
+                      </td>
+                      <td className="text-end">
+                        Rp {((item.variation?.price || item.product?.price) * item.quantity).toLocaleString('id-ID')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+              
+              <div className="d-flex justify-content-between mb-2">
+                <span>Subtotal</span>
+                <span>Rp {getSubtotal().toLocaleString('id-ID')}</span>
+              </div>
+              
+              <div className="d-flex justify-content-between mb-2">
+                <span>Biaya Pengiriman</span>
+                <span>Rp {shippingCost.toLocaleString('id-ID')}</span>
               </div>
               
               <hr />
               
-              <div className="d-flex justify-content-between mb-2">
-                <div>Subtotal</div>
-                <div>Rp {getSubtotal().toLocaleString('id-ID')}</div>
+              <div className="d-flex justify-content-between mb-0">
+                <strong>Total</strong>
+                <strong>Rp {(getSubtotal() + shippingCost).toLocaleString('id-ID')}</strong>
               </div>
-              
-              <div className="d-flex justify-content-between mb-2">
-                <div>Biaya Pengiriman</div>
-                <div>Rp {shippingCost.toLocaleString('id-ID')}</div>
-              </div>
-              
-              <hr />
-              
-              <div className="d-flex justify-content-between fw-bold">
-                <div>Total</div>
-                <div>Rp {(getSubtotal() + shippingCost).toLocaleString('id-ID')}</div>
-              </div>
-            </Card.Body>
-          </Card>
-          
-          <Card className="shadow-sm">
-            <Card.Body>
-              <h5 className="mb-3">Informasi Pengiriman</h5>
-              <p className="mb-1">
-                <small>
-                  Pengiriman dilakukan 1-3 hari kerja setelah pembayaran dikonfirmasi.
-                </small>
-              </p>
-              <p className="mb-0">
-                <small>
-                  Nomor resi akan dikirimkan melalui email dan dapat dilihat di halaman pesanan Anda.
-                </small>
-              </p>
             </Card.Body>
           </Card>
         </Col>

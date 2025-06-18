@@ -115,9 +115,7 @@ const ProductDetail = () => {
       const result = await addToCart(
         product.id,
         quantity,
-        selectedVariation?.id,
-        selectedSize,
-        selectedColor
+        selectedVariation?.id
       );
       
       if (result.success) {
