@@ -41,9 +41,9 @@ const MainLayout = ({ children }) => {
         <Container>
           <Navbar.Brand as={Link} to="/" className="fw-bold d-flex align-items-center">
             <img 
-              src="/logo/logo_navbar_150x50.png" 
+              src="/logo/logo_navbar.png" 
               alt="Ztuff.com" 
-              height="32" 
+              height="80" 
               className="me-2"
             />
           </Navbar.Brand>
@@ -194,9 +194,9 @@ const MainLayout = ({ children }) => {
           <div className="row">
             <div className="col-lg-4 mb-4">
               <img 
-                src="/logo/logo_footer_300x100.png" 
+                src="/logo/logo_navbar.png" 
                 alt="Ztuff.com" 
-                height="50" 
+                height="100" 
                 className="mb-3"
               />
               <p className="text-muted">

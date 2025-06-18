@@ -11,9 +11,9 @@ const AuthLayout = ({ children }) => {
             <div className="text-center mb-4">
               <Link to="/">
                 <img 
-                  src="/logo/logo_navbar_150x50.png" 
+                  src="/logo/logo_navbar.png" 
                   alt="Ztuff.com" 
-                  height="42" 
+                  height="160" 
                   className="mb-3"
                 />
               </Link>

@@ -3,17 +3,17 @@
   "name": "Ztuff.com - Online Marketplace",
   "icons": [
     {
-      "src": "logo/favicon_32x32.png",
+      "src": "logo/logo_navbar.png",
       "sizes": "32x32",
       "type": "image/png"
     },
     {
-      "src": "logo/square_icon_512x512.png",
+      "src": "logo/logo_navbar.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "logo/square_icon_512x512.png",
+      "src": "logo/logo_navbar.png",
       "type": "image/png",
       "sizes": "512x512"
     }
