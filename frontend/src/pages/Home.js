@@ -66,8 +66,8 @@ const Home = () => {
             style={{ height: '500px', objectFit: 'cover' }}
           />
           <Carousel.Caption>
-            <h1>Premium Dropshipping</h1>
-            <p className="lead">Start your online business with quality products</p>
+            <h1>Ztuff.com</h1>
+            <p className="lead">Trusted Online Marketplace with Quality Products</p>
             <Button as={Link} to="/products" variant="light" size="lg" className="rounded-pill px-4 mt-3">
               Shop Now
             </Button>
@@ -213,7 +213,7 @@ const Home = () => {
         <Container>
           <div className="position-relative rounded overflow-hidden">
             <img 
-              src="/promotion-banner.jpg"
+              src="/promo.jpg"
               onError={(e) => { e.target.src = '/default.webp'; }} 
               alt="Special Offer" 
               className="w-100" 
@@ -242,7 +242,7 @@ const Home = () => {
       <section className="mb-5 py-4">
         <Container>
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h2 className="mb-0">Dropshipping Tutorials</h2>
+            <h2 className="mb-0">Shopping Guide</h2>
             <Link to="/tutorial" className="text-decoration-none fw-bold">
               View All <FontAwesomeIcon icon={faArrowRight} className="ms-2" />
             </Link>

@@ -11,14 +11,14 @@ const AuthLayout = ({ children }) => {
             <div className="text-center mb-4">
               <Link to="/">
                 <img 
-                  src="/logo.png" 
-                  alt="Dropshipedia" 
+                  src="/logo/logo_navbar_150x50.png" 
+                  alt="Ztuff.com" 
                   height="42" 
                   className="mb-3"
                 />
               </Link>
-              <h4 className="text-dark-50">Selamat Datang di Dropshipedia</h4>
-              <p className="text-muted">Platform dropship terbaik untuk memulai bisnis online Anda.</p>
+              <h4 className="text-dark-50">Welcome to Ztuff.com</h4>
+              <p className="text-muted">The best marketplace platform to start your online business.</p>
             </div>
             
             <Card className="shadow-sm">
@@ -29,7 +29,7 @@ const AuthLayout = ({ children }) => {
             
             <div className="text-center mt-4">
               <p className="text-muted">
-                &copy; {new Date().getFullYear()} Dropshipedia. All rights reserved.
+                &copy; {new Date().getFullYear()} Ztuff.com. All rights reserved.
               </p>
             </div>
           </Col>

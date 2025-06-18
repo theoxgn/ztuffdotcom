@@ -39,8 +39,13 @@ const MainLayout = ({ children }) => {
     <div className="d-flex flex-column min-vh-100">
       <Navbar bg="white" expand="lg" sticky="top" className="py-3 border-bottom">
         <Container>
-          <Navbar.Brand as={Link} to="/" className="fw-bold">
-            Dropship Store
+          <Navbar.Brand as={Link} to="/" className="fw-bold d-flex align-items-center">
+            <img 
+              src="/logo/logo_navbar_150x50.png" 
+              alt="Ztuff.com" 
+              height="32" 
+              className="me-2"
+            />
           </Navbar.Brand>
           
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -188,9 +193,14 @@ const MainLayout = ({ children }) => {
         <Container>
           <div className="row">
             <div className="col-lg-4 mb-4">
-              <h5 className="fw-bold mb-3">Dropship Store</h5>
+              <img 
+                src="/logo/logo_footer_300x100.png" 
+                alt="Ztuff.com" 
+                height="50" 
+                className="mb-3"
+              />
               <p className="text-muted">
-                Your premier dropshipping platform with quality products and seamless experience.
+                Trusted online marketplace with quality products and seamless shopping experience.
               </p>
             </div>
             
@@ -234,7 +244,7 @@ const MainLayout = ({ children }) => {
           <hr className="my-4" />
           
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-center">
-            <p className="mb-3 mb-md-0">&copy; {new Date().getFullYear()} Dropship Store. All rights reserved.</p>
+            <p className="mb-3 mb-md-0">&copy; {new Date().getFullYear()} Ztuff.com. All rights reserved.</p>
             <div>
               <a href="#" className="text-decoration-none text-secondary me-3">
                 <i className="fab fa-facebook-f"></i>

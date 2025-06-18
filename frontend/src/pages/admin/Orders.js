@@ -49,11 +49,24 @@ const OrderList = () => {
 
   // Format currency
   const formatCurrency = (amount) => {
+    // Handle invalid values
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      return 'Rp0';
+    }
+    
+    // Convert string to number if needed
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    
+    // Check if conversion resulted in valid number
+    if (isNaN(numAmount)) {
+      return 'Rp0';
+    }
+    
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0
-    }).format(amount);
+    }).format(numAmount);
   };
 
   // Get status badge
@@ -276,11 +289,24 @@ const OrderDetail = () => {
 
   // Format currency
   const formatCurrency = (amount) => {
+    // Handle invalid values
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      return 'Rp0';
+    }
+    
+    // Convert string to number if needed
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    
+    // Check if conversion resulted in valid number
+    if (isNaN(numAmount)) {
+      return 'Rp0';
+    }
+    
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0
-    }).format(amount);
+    }).format(numAmount);
   };
 
   // Format date
@@ -353,6 +379,281 @@ const OrderDetail = () => {
       default:
         return [];
     }
+  };
+
+  // Handle print invoice
+  const handlePrintInvoice = () => {
+    const printWindow = window.open('', '_blank');
+    const invoiceHTML = generateInvoiceHTML(order);
+    printWindow.document.write(invoiceHTML);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  // Handle export PDF
+  const handleExportPDF = () => {
+    // Simple PDF export using browser's print to PDF
+    const printWindow = window.open('', '_blank');
+    const invoiceHTML = generateInvoiceHTML(order);
+    printWindow.document.write(invoiceHTML);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  // Generate invoice HTML
+  const generateInvoiceHTML = (order) => {
+    const currentDate = new Date().toLocaleDateString('id-ID');
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Invoice - ${order?.order_number}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Arial', sans-serif; 
+            line-height: 1.5; 
+            color: #333;
+            background: white;
+          }
+          .invoice-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+          }
+          .header {
+            background: #1428a0;
+            color: white;
+            padding: 30px;
+            text-align: center;
+          }
+          .header h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+          .header h2 {
+            font-size: 1rem;
+            font-weight: normal;
+          }
+          .content {
+            padding: 30px;
+          }
+          .invoice-meta {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+          }
+          .invoice-details, .customer-info {
+            flex: 1;
+          }
+          .invoice-details {
+            background: #f5f5f5;
+            padding: 20px;
+          }
+          .customer-info {
+            background: #f5f5f5;
+            padding: 20px;
+          }
+          .section-title {
+            color: #1428a0;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+          }
+          .detail-item {
+            margin-bottom: 8px;
+          }
+          .detail-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 80px;
+            color: #666;
+          }
+          .detail-value {
+            color: #333;
+          }
+          .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            background: #28a745;
+            color: white;
+          }
+          .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            border: 2px solid #1428a0;
+          }
+          .items-table th {
+            background: #1428a0;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+          }
+          .items-table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+          }
+          .items-table tbody tr:nth-child(even) {
+            background: #f9f9f9;
+          }
+          .total-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin-top: 20px;
+          }
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+          }
+          .total-row:last-child {
+            border-bottom: 2px solid #1428a0;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1428a0;
+            margin-top: 10px;
+            padding-top: 10px;
+          }
+          .total-label {
+            font-weight: bold;
+          }
+          .footer {
+            background: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            margin-top: 30px;
+          }
+          .footer-message {
+            font-size: 1rem;
+            color: #1428a0;
+            font-weight: bold;
+            margin-bottom: 10px;
+          }
+          .print-date {
+            font-size: 0.9rem;
+            color: #999;
+          }
+          @media print {
+            .invoice-container { margin: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="invoice-container">
+          <div class="header">
+            <h1>INVOICE</h1>
+            <h2>Ztuff.com</h2>
+          </div>
+          
+          <div class="content">
+            <div class="invoice-meta">
+              <div class="invoice-details">
+                <div class="section-title">Detail Invoice</div>
+                <div class="detail-item">
+                  <span class="detail-label">Invoice:</span>
+                  <span class="detail-value">${order?.order_number}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Tanggal:</span>
+                  <span class="detail-value">${formatDate(order?.createdAt)}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Status:</span>
+                  <span class="detail-value">
+                    <span class="status-badge">${order?.status}</span>
+                  </span>
+                </div>
+              </div>
+              
+              <div class="customer-info">
+                <div class="section-title">Informasi Pelanggan</div>
+                <div class="detail-item">
+                  <span class="detail-label">Nama:</span>
+                  <span class="detail-value">${order?.user?.name}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Email:</span>
+                  <span class="detail-value">${order?.user?.email}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Telepon:</span>
+                  <span class="detail-value">${order?.user?.phone || 'Tidak tersedia'}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Alamat:</span>
+                  <span class="detail-value">${order?.shipping_address}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Kota:</span>
+                  <span class="detail-value">${order?.shipping_city}, ${order?.shipping_province} ${order?.shipping_postal_code}</span>
+                </div>
+              </div>
+            </div>
+            
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th>Produk</th>
+                  <th style="text-align: right; width: 120px;">Harga</th>
+                  <th style="text-align: center; width: 80px;">Qty</th>
+                  <th style="text-align: right; width: 120px;">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${order?.items?.map(item => `
+                  <tr>
+                    <td>
+                      <strong>${item.product?.name}</strong>
+                      ${item.variation ? `<br><small style="color: #666;">${item.variation}</small>` : ''}
+                    </td>
+                    <td style="text-align: right;">${formatCurrency(item.price)}</td>
+                    <td style="text-align: center;">${item.quantity}</td>
+                    <td style="text-align: right; font-weight: bold;">${formatCurrency(item.price * item.quantity)}</td>
+                  </tr>
+                `).join('') || '<tr><td colspan="4" style="text-align: center; color: #999;">Tidak ada item</td></tr>'}
+              </tbody>
+            </table>
+            
+            <div class="total-section">
+              <div class="total-row">
+                <span class="total-label">Subtotal:</span>
+                <span>${formatCurrency(order?.subtotal)}</span>
+              </div>
+              <div class="total-row">
+                <span class="total-label">Ongkos Kirim:</span>
+                <span>${formatCurrency(order?.shipping_cost)}</span>
+              </div>
+              ${order?.discount_amount > 0 ? `
+              <div class="total-row">
+                <span class="total-label">Diskon:</span>
+                <span style="color: #dc3545;">-${formatCurrency(order?.discount_amount)}</span>
+              </div>
+              ` : ''}
+              <div class="total-row">
+                <span class="total-label">TOTAL PEMBAYARAN:</span>
+                <span>${formatCurrency(order?.total)}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <div class="footer-message">Terima kasih telah berbelanja di Ztuff.com!</div>
+            <div class="print-date">Dicetak pada: ${currentDate}</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
   };
 
   if (loading) {
@@ -455,12 +756,13 @@ const OrderDetail = () => {
                           <td>
                             <div className="d-flex align-items-center">
                               <img 
-                                src={item.product?.image || '/default.webp'} 
+                                src={item.product?.image ? `${process.env.REACT_APP_API_URL}/uploads/${item.product.image}` : '/default.webp'} 
                                 alt={item.product?.name || 'Product'} 
                                 width="50" 
                                 height="50" 
                                 className="me-3"
                                 style={{ objectFit: 'cover' }}
+                                onError={(e) => { e.target.src = '/default.webp'; }}
                               />
                               <div>
                                 <h6 className="mb-0">{item.product?.name}</h6>
@@ -495,7 +797,7 @@ const OrderDetail = () => {
                       )}
                       <tr className="table-primary">
                         <th colSpan="3">Total</th>
-                        <th>{formatCurrency(order?.total_amount)}</th>
+                        <th>{formatCurrency(order?.total)}</th>
                       </tr>
                     </tfoot>
                   </Table>
@@ -511,23 +813,29 @@ const OrderDetail = () => {
                 <Card.Body>
                   <Row>
                     <Col md={6}>
-                      <p><strong>Metode Pembayaran:</strong> {order?.payment_method || 'Belum dipilih'}</p>
-                      <p><strong>Status Pembayaran:</strong> {getStatusBadge(order?.payment_status || 'pending')}</p>
+                      <p><strong>Metode Pembayaran:</strong> {order?.paymentMethod?.name || 'Belum dipilih'}</p>
+                      <p><strong>Status Pembayaran:</strong> {getStatusBadge(order?.status || 'pending')}</p>
                       <p><strong>Total Pembayaran:</strong> {formatCurrency(order?.total)}</p>
                     </Col>
                     <Col md={6}>
-                      {order?.payment_proof && (
-                        <div>
-                          <p><strong>Bukti Pembayaran:</strong></p>
-                          <img 
-                            src={order.payment_proof || '/default.webp'} 
-                            alt="Bukti Pembayaran" 
-                            className="img-fluid rounded"
-                            style={{ maxHeight: '200px' }}
-                            onError={(e) => { e.target.src = '/default.webp'; }}
-                          />
-                        </div>
-                      )}
+                      <div>
+                        <p><strong>Bukti Pembayaran:</strong></p>
+                        {order?.payment_proof ? (
+                          <div>
+                            <img 
+                              src={`${process.env.REACT_APP_API_URL}/uploads/${order.payment_proof}`} 
+                              alt="Bukti Pembayaran" 
+                              className="img-fluid rounded"
+                              style={{ maxHeight: '200px' }}
+                              onError={(e) => { 
+                                e.target.src = '/default.webp'; 
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-muted">Belum ada bukti pembayaran</p>
+                        )}
+                      </div>
                     </Col>
                   </Row>
                 </Card.Body>
@@ -611,7 +919,7 @@ const OrderDetail = () => {
             <Card.Body>
               <p><strong>No. Pesanan:</strong> {order?.order_number}</p>
               <p><strong>Tanggal:</strong> {formatDate(order?.createdAt)}</p>
-              <p><strong>Total Item:</strong> {order?.items?.reduce((sum, item) => sum + item.quantity, 0)}</p>
+              <p><strong>Total Item:</strong> {order?.items?.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0) || 0}</p>
               <p><strong>Total Pembayaran:</strong> {formatCurrency(order?.total)}</p>
               <p><strong>Status:</strong> {getStatusBadge(order?.status)}</p>
             </Card.Body>
@@ -623,11 +931,11 @@ const OrderDetail = () => {
             </Card.Header>
             <Card.Body>
               <div className="d-grid gap-2">
-                <Button variant="outline-primary" size="sm">
+                <Button variant="outline-primary" size="sm" onClick={handlePrintInvoice}>
                   <FontAwesomeIcon icon={faPrint} className="me-2" />
                   Cetak Invoice
                 </Button>
-                <Button variant="outline-success" size="sm">
+                <Button variant="outline-success" size="sm" onClick={handleExportPDF}>
                   <FontAwesomeIcon icon={faFileInvoice} className="me-2" />
                   Ekspor PDF
                 </Button>

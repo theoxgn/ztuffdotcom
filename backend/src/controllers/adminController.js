@@ -1,4 +1,4 @@
-const { User, Product, Order, Category, Voucher, Tutorial, sequelize } = require('../models');
+const { User, Product, Order, OrderItem, Category, Voucher, Tutorial, PaymentMethod, sequelize } = require('../models');
 const { successResponse, errorResponse } = require('../utils/helpers');
 
 /**
@@ -321,7 +321,23 @@ const getOrderDetail = async (req, res) => {
         {
           model: User,
           as: 'user',
-          attributes: ['id', 'name', 'email', 'phone', 'created_at']
+          attributes: ['id', 'name', 'email', 'phone', 'createdAt']
+        },
+        {
+          model: OrderItem,
+          as: 'items',
+          include: [
+            {
+              model: Product,
+              as: 'product',
+              attributes: ['id', 'name', 'image']
+            }
+          ]
+        },
+        {
+          model: PaymentMethod,
+          as: 'paymentMethod',
+          attributes: ['id', 'name', 'description']
         }
       ]
     });
@@ -357,9 +373,6 @@ const updateOrderStatus = async (req, res) => {
       status,
       updatedAt: new Date()
     });
-
-    // If note is provided, you might want to save it to an order_notes table
-    // This would require creating the order_notes table and model first
 
     return successResponse(res, 200, 'Status pesanan berhasil diperbarui', { order });
   } catch (error) {
