@@ -51,14 +51,12 @@ const Tutorial = () => {
           {tutorials.map((tutorial) => (
             <Col key={tutorial.id} md={6} lg={4} className="mb-4">
               <Card className="h-100 shadow-sm">
-                {tutorial.image && (
-                  <Card.Img 
-                    variant="top" 
-                    src={tutorial.image} 
-                    alt={tutorial.title} 
-                    style={{ height: '200px', objectFit: 'cover' }} 
-                  />
-                )}
+                <Card.Img 
+                  variant="top" 
+                  src={tutorial.image || '/default.webp'} 
+                  alt={tutorial.title} 
+                  style={{ height: '200px', objectFit: 'cover' }} 
+                />
                 <Card.Body>
                   <Card.Title>{tutorial.title}</Card.Title>
                   <Card.Text className="text-muted small">

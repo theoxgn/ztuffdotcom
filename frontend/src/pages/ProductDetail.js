@@ -1,8 +1,17 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Row, Col, Card, Button, Spinner, Alert, Form, Tabs, Tab, Image, Badge } from 'react-bootstrap';
+import { Row, Col, Card, Button, Spinner, Alert, Form, Tabs, Tab, Image, Badge, Container } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faShoppingCart, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faShoppingCart, 
+  faArrowLeft, 
+  faHeart, 
+  faShare, 
+  faStar, 
+  faShieldAlt, 
+  faTruck, 
+  faUndo 
+} from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import CartContext from '../contexts/CartContext';
 import AuthContext from '../contexts/AuthContext';
@@ -31,18 +40,21 @@ const ProductDetail = () => {
         setError(null);
         
         const response = await axios.get(`/api/products/${id}`);
-        setProduct(response.data.data.product);
-        setVariations(response.data.data.variations || []);
+        const productData = response.data.data.product;
+        const variationsData = productData.variations || response.data.data.variations || [];
+        
+        setProduct(productData);
+        setVariations(variationsData);
         
         // If there's only one variation, select it by default
-        if (response.data.data.variations?.length === 1) {
-          setSelectedVariation(response.data.data.variations[0]);
-          setSelectedSize(response.data.data.variations[0].size || '');
-          setSelectedColor(response.data.data.variations[0].color || '');
+        if (variationsData.length === 1) {
+          setSelectedVariation(variationsData[0]);
+          setSelectedSize(variationsData[0].size || '');
+          setSelectedColor(variationsData[0].color || '');
         }
       } catch (error) {
         console.error('Error fetching product:', error);
-        setError('Gagal memuat produk. Silakan coba lagi.');
+        setError('Failed to load product. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -104,7 +116,7 @@ const ProductDetail = () => {
   // Handle add to cart
   const handleAddToCart = async () => {
     if (!currentUser) {
-      setCartMessage({ type: 'danger', text: 'Silakan login terlebih dahulu untuk menambahkan produk ke keranjang.' });
+      setCartMessage({ type: 'danger', text: 'Please login first to add products to your cart.' });
       return;
     }
 
@@ -119,12 +131,12 @@ const ProductDetail = () => {
       );
       
       if (result.success) {
-        setCartMessage({ type: 'success', text: 'Produk berhasil ditambahkan ke keranjang.' });
+        setCartMessage({ type: 'success', text: 'Product successfully added to cart.' });
       } else {
         setCartMessage({ type: 'danger', text: result.message });
       }
     } catch (error) {
-      setCartMessage({ type: 'danger', text: 'Gagal menambahkan produk ke keranjang. Silakan coba lagi.' });
+      setCartMessage({ type: 'danger', text: 'Failed to add product to cart. Please try again.' });
     } finally {
       setAddingToCart(false);
     }
@@ -134,7 +146,7 @@ const ProductDetail = () => {
     return (
       <div className="text-center my-5">
         <Spinner animation="border" variant="primary" />
-        <p className="mt-2">Memuat produk...</p>
+        <p className="mt-2">Loading product...</p>
       </div>
     );
   }
@@ -142,138 +154,193 @@ const ProductDetail = () => {
   if (error || !product) {
     return (
       <Alert variant="danger">
-        <Alert.Heading>Terjadi Kesalahan</Alert.Heading>
-        <p>{error || 'Produk tidak ditemukan.'}</p>
+        <Alert.Heading>An Error Occurred</Alert.Heading>
+        <p>{error || 'Product not found.'}</p>
         <Button as={Link} to="/products" variant="outline-danger">
           <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
-          Kembali ke Daftar Produk
+          Back to Products
         </Button>
       </Alert>
     );
   }
 
   return (
-    <div>
-      <div className="mb-4">
-        <Button as={Link} to="/products" variant="outline-primary" size="sm">
-          <FontAwesomeIcon icon={faArrowLeft} className="me-1" />
-          Kembali ke Daftar Produk
-        </Button>
-      </div>
-      
-      <Row>
-        <Col md={6} className="mb-4">
-          {product.images && product.images.length > 0 ? (
-            <>
-              <div className="product-main-image mb-3">
+    <div className="animate-fade-in">
+      <Container>
+        <div className="mb-4">
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb">
+              <li className="breadcrumb-item"><Link to="/">Home</Link></li>
+              <li className="breadcrumb-item"><Link to="/products">Products</Link></li>
+              <li className="breadcrumb-item"><Link to={`/products?category=${product.category?.id}`}>{product.category?.name || 'General'}</Link></li>
+              <li className="breadcrumb-item active" aria-current="page">{product.name}</li>
+            </ol>
+          </nav>
+        </div>
+        
+        <Row className="mb-5">
+          <Col lg={6} className="mb-4">
+            <div className="product-gallery">
+              {product.images && product.images.length > 0 ? (
+                <>
+                  <div className="product-main-image mb-3">
+                    <Image 
+                      src={product.images[activeImage].image || '/default.webp'}
+                      alt={product.name}
+                      fluid
+                      className="rounded"
+                      style={{ width: '100%', height: '500px', objectFit: 'contain', backgroundColor: '#f8f9fa' }}
+                      onError={(e) => { e.target.src = '/default.webp'; }}
+                    />
+                  </div>
+                  <Row className="g-2">
+                    {product.images.map((image, index) => (
+                      <Col xs={3} key={image.id}>
+                        <Image 
+                          src={image.image || '/default.webp'}
+                          alt={`${product.name} - ${index + 1}`}
+                          className={`cursor-pointer rounded ${activeImage === index ? 'border border-2 border-primary' : 'border'}`}
+                          onClick={() => setActiveImage(index)}
+                          style={{ height: '80px', width: '100%', objectFit: 'cover' }}
+                          onError={(e) => { e.target.src = '/default.webp'; }}
+                        />
+                      </Col>
+                    ))}
+                  </Row>
+                </>
+              ) : (
                 <Image 
-                  src={product.images[activeImage].image && !product.images[activeImage].image.startsWith('http') 
-                    ? `/${product.images[activeImage].image}` 
-                    : product.images[activeImage].image || '/placeholder.jpg'}
+                  src={product.image || '/default.webp'}
                   alt={product.name}
                   fluid
-                  className="rounded shadow-sm"
-                  style={{ width: '100%', height: '400px', objectFit: 'cover' }}
+                  className="rounded"
+                  style={{ width: '100%', height: '500px', objectFit: 'contain', backgroundColor: '#f8f9fa' }}
+                  onError={(e) => { e.target.src = '/default.webp'; }}
                 />
-              </div>
-              <Row>
-                {product.images.map((image, index) => (
-                  <Col xs={3} key={image.id} className="mb-2">
-                    <Image 
-                      src={image.image && !image.image.startsWith('http') 
-                        ? `/${image.image}` 
-                        : image.image || '/placeholder.jpg'}
-                      alt={`${product.name} - ${index + 1}`}
-                      thumbnail
-                      className={`cursor-pointer ${activeImage === index ? 'border-primary' : ''}`}
-                      onClick={() => setActiveImage(index)}
-                      style={{ height: '80px', objectFit: 'cover' }}
-                    />
-                  </Col>
-                ))}
-              </Row>
-            </>
-          ) : (
-            <Image 
-              src={product.image && !product.image.startsWith('http') ? `/${product.image}` : product.image || '/placeholder.jpg'}
-              alt={product.name}
-              fluid
-              className="rounded shadow-sm"
-              style={{ width: '100%', height: '400px', objectFit: 'cover' }}
-            />
-          )}
-        </Col>
-        
-        <Col md={6}>
-          <Card className="shadow-sm">
-            <Card.Body>
-              <h2>{product.name}</h2>
-              <p className="text-muted mb-2">Kategori: {product.category?.name || 'Umum'}</p>
-              
-              <h3 className="text-primary mb-3">
-                Rp {parseFloat(selectedVariation?.price || product.price).toLocaleString('id-ID')}
-              </h3>
-              
-              {product.stock > 0 ? (
-                <Badge bg="success" className="mb-3">Tersedia</Badge>
-              ) : (
-                <Badge bg="danger" className="mb-3">Stok Habis</Badge>
               )}
+            </div>
+          </Col>
+          
+          <Col lg={6}>
+            <div className="product-info">
+              <div className="d-flex justify-content-between align-items-start mb-2">
+                <Badge bg="primary" className="rounded-pill px-3 py-2">{product.category?.name || 'Product'}</Badge>
+                <div>
+                  <Button variant="light" className="rounded-circle me-2 p-2" title="Add to Wishlist">
+                    <FontAwesomeIcon icon={faHeart} />
+                  </Button>
+                  <Button variant="light" className="rounded-circle p-2" title="Share">
+                    <FontAwesomeIcon icon={faShare} />
+                  </Button>
+                </div>
+              </div>
               
-              <Form className="mt-4">
-                {sizes.length > 0 && (
-                  <Form.Group className="mb-3">
-                    <Form.Label>Ukuran</Form.Label>
-                    <Form.Select 
-                      value={selectedSize} 
-                      onChange={handleSizeChange}
-                      required
-                    >
-                      <option value="">Pilih Ukuran</option>
-                      {sizes.map(size => (
-                        <option key={size} value={size}>{size}</option>
+              <h1 className="mb-3">{product.name}</h1>
+              
+              <h2 className="text-primary fw-bold mb-4">
+                Rp {parseFloat(selectedVariation?.price || product.price).toLocaleString('id-ID')}
+              </h2>
+              
+              <div className="mb-4">
+                {product.stock > 0 ? (
+                  <Badge bg="success" className="rounded-pill px-3 py-2">In Stock</Badge>
+                ) : (
+                  <Badge bg="danger" className="rounded-pill px-3 py-2">Out of Stock</Badge>
+                )}
+              </div>
+              
+              <div className="product-description mb-4">
+                <p className="text-muted">{product.description?.replace(/<[^>]*>/g, '').substring(0, 200)}...</p>
+              </div>
+              
+              <Form className="product-form">
+                {colors.length > 0 && (
+                  <Form.Group className="mb-4">
+                    <Form.Label className="fw-bold">Warna</Form.Label>
+                    <div className="d-flex flex-wrap">
+                      {colors.map(color => (
+                        <Button 
+                          key={color} 
+                          variant={selectedColor === color ? 'primary' : 'outline-secondary'}
+                          size="sm"
+                          className="me-2 mb-2"
+                          onClick={() => handleColorChange({ target: { value: color } })}
+                          style={{ 
+                            minWidth: '80px',
+                            borderRadius: '20px'
+                          }}
+                        >
+                          {color}
+                        </Button>
                       ))}
-                    </Form.Select>
+                    </div>
                   </Form.Group>
                 )}
                 
-                {colors.length > 0 && (
-                  <Form.Group className="mb-3">
-                    <Form.Label>Warna</Form.Label>
-                    <Form.Select 
-                      value={selectedColor} 
-                      onChange={handleColorChange}
-                      required
-                    >
-                      <option value="">Pilih Warna</option>
-                      {colors.map(color => (
-                        <option key={color} value={color}>{color}</option>
+                {sizes.length > 0 && (
+                  <Form.Group className="mb-4">
+                    <Form.Label className="fw-bold">Ukuran</Form.Label>
+                    <div className="d-flex flex-wrap">
+                      {sizes.map(size => (
+                        <div 
+                          key={size} 
+                          onClick={() => handleSizeChange({ target: { value: size } })}
+                          className={`size-option me-2 mb-2 d-flex align-items-center justify-content-center ${selectedSize === size ? 'bg-primary text-white' : 'bg-light'}`}
+                          style={{ 
+                            width: '50px', 
+                            height: '50px', 
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {size}
+                        </div>
                       ))}
-                    </Form.Select>
+                    </div>
                   </Form.Group>
                 )}
                 
                 <Form.Group className="mb-4">
-                  <Form.Label>Jumlah</Form.Label>
-                  <Form.Control
-                    type="number"
-                    min="1"
-                    value={quantity}
-                    onChange={handleQuantityChange}
-                    max={selectedVariation?.stock || product.stock}
-                  />
+                  <Form.Label className="fw-bold">Jumlah</Form.Label>
+                  <div className="d-flex align-items-center">
+                    <Button 
+                      variant="light" 
+                      className="border"
+                      onClick={() => quantity > 1 && setQuantity(quantity - 1)}
+                    >
+                      -
+                    </Button>
+                    <Form.Control
+                      type="number"
+                      min="1"
+                      value={quantity}
+                      onChange={handleQuantityChange}
+                      max={selectedVariation?.stock || product.stock}
+                      className="text-center mx-2"
+                      style={{ width: '80px' }}
+                    />
+                    <Button 
+                      variant="light"
+                      className="border"
+                      onClick={() => quantity < (selectedVariation?.stock || product.stock) && setQuantity(quantity + 1)}
+                    >
+                      +
+                    </Button>
+                  </div>
                 </Form.Group>
                 
                 {cartMessage && (
-                  <Alert variant={cartMessage.type} className="mb-3">
+                  <Alert variant={cartMessage.type} className="mb-4">
                     {cartMessage.text}
                   </Alert>
                 )}
                 
-                <div className="d-grid">
+                <div className="d-grid gap-2">
                   <Button 
                     variant="primary" 
                     size="lg"
+                    className="rounded-pill"
                     onClick={handleAddToCart}
                     disabled={
                       addingToCart || 
@@ -282,38 +349,104 @@ const ProductDetail = () => {
                     }
                   >
                     <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
-                    {addingToCart ? 'Menambahkan...' : 'Tambah ke Keranjang'}
+                    {addingToCart ? 'Adding...' : 'Add to Cart'}
                   </Button>
                 </div>
               </Form>
-            </Card.Body>
-          </Card>
-          
-          <Card className="mt-4 shadow-sm">
-            <Card.Body>
-              <Tabs defaultActiveKey="description" className="mb-3">
-                <Tab eventKey="description" title="Deskripsi">
+              
+              <hr className="my-4" />
+              
+              <div className="product-features">
+                <div className="d-flex mb-3">
+                  <div className="me-3">
+                    <FontAwesomeIcon icon={faShieldAlt} className="text-primary" />
+                  </div>
+                  <div>
+                    <h6 className="mb-1">Original Product Guarantee</h6>
+                    <p className="text-muted small mb-0">All products are 100% original</p>
+                  </div>
+                </div>
+                
+                <div className="d-flex mb-3">
+                  <div className="me-3">
+                    <FontAwesomeIcon icon={faTruck} className="text-primary" />
+                  </div>
+                  <div>
+                    <h6 className="mb-1">Fast Shipping</h6>
+                    <p className="text-muted small mb-0">Delivery within 2-5 business days</p>
+                  </div>
+                </div>
+                
+                <div className="d-flex">
+                  <div className="me-3">
+                    <FontAwesomeIcon icon={faUndo} className="text-primary" />
+                  </div>
+                  <div>
+                    <h6 className="mb-1">Easy Returns</h6>
+                    <p className="text-muted small mb-0">30-day return policy</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Col>
+        </Row>
+        
+        <div className="product-details mb-5">
+          <Tabs defaultActiveKey="description" className="mb-4">
+            <Tab eventKey="description" title="Description">
+              <Card className="border-0 shadow-sm">
+                <Card.Body className="p-4">
                   <div dangerouslySetInnerHTML={{ __html: product.description }} />
-                </Tab>
-                <Tab eventKey="details" title="Detail">
-                  <table className="table table-borderless">
+                </Card.Body>
+              </Card>
+            </Tab>
+            <Tab eventKey="specifications" title="Specifications">
+              <Card className="border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <table className="table">
                     <tbody>
                       <tr>
-                        <td>Berat</td>
-                        <td>{product.weight} gram</td>
+                        <td className="fw-bold" width="30%">Weight</td>
+                        <td>{product.weight} grams</td>
                       </tr>
                       <tr>
-                        <td>Stok</td>
-                        <td>{selectedVariation?.stock || product.stock}</td>
+                        <td className="fw-bold">Stock</td>
+                        <td>{selectedVariation?.stock || product.stock} units</td>
                       </tr>
+                      {product.dimensions && (
+                        <tr>
+                          <td className="fw-bold">Dimensions</td>
+                          <td>{product.dimensions}</td>
+                        </tr>
+                      )}
+                      {product.material && (
+                        <tr>
+                          <td className="fw-bold">Material</td>
+                          <td>{product.material}</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
-                </Tab>
-              </Tabs>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+                </Card.Body>
+              </Card>
+            </Tab>
+            <Tab eventKey="reviews" title="Reviews">
+              <Card className="border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <p className="text-center text-muted">No reviews yet for this product.</p>
+                </Card.Body>
+              </Card>
+            </Tab>
+          </Tabs>
+        </div>
+        
+        <div className="related-products">
+          <h3 className="mb-4">You May Also Like</h3>
+          <div className="text-center text-muted">
+            <p>Related products will appear here</p>
+          </div>
+        </div>
+      </Container>
     </div>
   );
 };

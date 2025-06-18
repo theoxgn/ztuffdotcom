@@ -387,10 +387,11 @@ const OrderHistory = () => {
                   <hr />
                   <div className="text-center">
                     <img 
-                      src={`/uploads/${orderDetails.payment_proof}`} 
+                      src={orderDetails.payment_proof ? `/uploads/${orderDetails.payment_proof}` : '/default.webp'} 
                       alt="Bukti Pembayaran" 
                       className="img-fluid" 
                       style={{ maxHeight: '300px' }}
+                      onError={(e) => { e.target.src = '/default.webp'; }}
                     />
                   </div>
                 </div>

@@ -3,6 +3,7 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const { successResponse, errorResponse } = require('../utils/helpers');
 const { authenticate, isAdmin } = require('../middlewares/auth');
+const { uploadProductImage } = require('../middlewares/upload');
 
 // Admin dashboard data
 router.get('/dashboard', authenticate, isAdmin, adminController.getDashboardData);
@@ -12,6 +13,9 @@ router.get('/categories', authenticate, isAdmin, adminController.getAllCategorie
 
 // Admin orders endpoints
 router.get('/orders', authenticate, isAdmin, adminController.getAllOrders);
+router.get('/orders/:id', authenticate, isAdmin, adminController.getOrderDetail);
+router.put('/orders/:id/status', authenticate, isAdmin, adminController.updateOrderStatus);
+router.post('/orders/:id/notes', authenticate, isAdmin, adminController.addOrderNote);
 
 // Admin vouchers endpoints
 router.get('/vouchers', authenticate, isAdmin, adminController.getAllVouchers);
@@ -24,5 +28,9 @@ router.get('/users', authenticate, isAdmin, adminController.getAllUsers);
 
 // Admin products endpoints
 router.get('/products', authenticate, isAdmin, adminController.getAllProducts);
+router.get('/products/:id', authenticate, isAdmin, adminController.getProductDetail);
+router.post('/products', authenticate, isAdmin, uploadProductImage.single('image'), adminController.createProduct);
+router.put('/products/:id', authenticate, isAdmin, uploadProductImage.single('image'), adminController.updateProduct);
+router.delete('/products/:id', authenticate, isAdmin, adminController.deleteProduct);
 
 module.exports = router; 

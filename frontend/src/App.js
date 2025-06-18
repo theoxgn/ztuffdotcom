@@ -29,6 +29,7 @@ import AdminOrders from './pages/admin/Orders';
 // Context Provider
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
+import { ToastProvider } from './components';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -47,7 +48,8 @@ function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <Router>
+        <ToastProvider>
+          <Router>
           <Routes>
             {/* Auth Routes */}
             <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
@@ -94,7 +96,8 @@ function App() {
             {/* Fallback Route */}
             <Route path="*" element={<MainLayout><Navigate to="/" /></MainLayout>} />
           </Routes>
-        </Router>
+          </Router>
+        </ToastProvider>
       </CartProvider>
     </AuthProvider>
   );

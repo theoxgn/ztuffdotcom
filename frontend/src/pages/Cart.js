@@ -136,7 +136,7 @@ const Cart = () => {
                         <td>
                           <div className="d-flex align-items-center">
                             <img 
-                              src={item.product?.image ? `/${item.product.image}` : '/placeholder.jpg'} 
+                              src={item.product?.image ? `/${item.product.image}` : '/default.webp'} 
                               alt={item.product?.name} 
                               style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '10px' }}
                             />

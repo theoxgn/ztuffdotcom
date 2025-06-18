@@ -338,9 +338,11 @@ const Products = () => {
                   <div className="product-image-container">
                     <Card.Img 
                       variant="top" 
-                      src={product.image ? `${product.image}` : '/placeholder.jpg'} 
+                      src={product.image || '/default.webp'} 
                       alt={product.name}
                       className="product-image"
+                      onError={(e) => { e.target.src = '/default.webp'; }}
+                      style={{ height: '250px', objectFit: 'cover' }}
                     />
                   </div>
                   <Card.Body className="d-flex flex-column">

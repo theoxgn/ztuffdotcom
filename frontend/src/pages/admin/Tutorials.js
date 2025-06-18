@@ -189,16 +189,14 @@ const Tutorials = () => {
                 <tr key={tutorial.id}>
                   <td>
                     <div className="d-flex align-items-center">
-                      {tutorial.image && (
-                        <img 
-                          src={tutorial.image} 
-                          alt={tutorial.title} 
-                          width="50" 
-                          height="50" 
-                          className="me-2 rounded"
-                          style={{ objectFit: 'cover' }}
-                        />
-                      )}
+                      <img 
+                        src={tutorial.image || '/default.webp'} 
+                        alt={tutorial.title} 
+                        width="50" 
+                        height="50" 
+                        className="me-2 rounded"
+                        style={{ objectFit: 'cover' }}
+                      />
                       {tutorial.title}
                     </div>
                   </td>
@@ -311,15 +309,13 @@ const Tutorials = () => {
                 accept="image/*"
                 onChange={handleImageChange}
               />
-              {imagePreview && (
-                <div className="mt-2">
-                  <img 
-                    src={imagePreview} 
-                    alt="Preview" 
-                    style={{ maxHeight: '200px', maxWidth: '100%' }} 
-                  />
-                </div>
-              )}
+              <div className="mt-2">
+                <img 
+                  src={imagePreview || '/default.webp'} 
+                  alt="Preview" 
+                  style={{ maxHeight: '200px', maxWidth: '100%' }} 
+                />
+              </div>
             </Form.Group>
             
             <Form.Group className="mb-3">

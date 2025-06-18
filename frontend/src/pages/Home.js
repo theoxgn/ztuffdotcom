@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Button, Carousel, Spinner } from 'react-bootstrap';
+import { Row, Col, Card, Button, Carousel, Spinner, Container } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowRight, faShoppingCart, faEye } from '@fortawesome/free-solid-svg-icons';
 
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -30,7 +32,7 @@ const Home = () => {
         setTutorials(Array.isArray(tutorialsResponse.data.data.tutorials) ? tutorialsResponse.data.data.tutorials : []);
       } catch (error) {
         console.error('Error fetching data:', error);
-        setError('Gagal memuat data. Silakan coba lagi.');
+        setError('Failed to load data. Please try again.');
         setFeaturedProducts([]);
         setCategories([]);
         setTutorials([]);
@@ -46,161 +48,286 @@ const Home = () => {
     return (
       <div className="text-center my-5">
         <Spinner animation="border" variant="primary" />
-        <p className="mt-2">Memuat data...</p>
+        <p className="mt-2">Loading data...</p>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="animate-fade-in">
       {/* Hero Section */}
-      <Carousel className="mb-5">
+      <Carousel className="mb-5 hero-carousel">
         <Carousel.Item>
           <img
             className="d-block w-100"
             src="/banner1.jpg"
-            alt="First slide"
-            style={{ height: '400px', objectFit: 'cover' }}
+            onError={(e) => { e.target.src = '/default.webp'; }}
+            alt="Premium Products"
+            style={{ height: '500px', objectFit: 'cover' }}
           />
           <Carousel.Caption>
-            <h3>Dropshipedia</h3>
-            <p>Platform dropship terbaik untuk memulai bisnis online Anda.</p>
+            <h1>Premium Dropshipping</h1>
+            <p className="lead">Start your online business with quality products</p>
+            <Button as={Link} to="/products" variant="light" size="lg" className="rounded-pill px-4 mt-3">
+              Shop Now
+            </Button>
           </Carousel.Caption>
         </Carousel.Item>
         <Carousel.Item>
           <img
             className="d-block w-100"
             src="/banner2.jpg"
-            alt="Second slide"
-            style={{ height: '400px', objectFit: 'cover' }}
+            onError={(e) => { e.target.src = '/default.webp'; }}
+            alt="Easy Shipping"
+            style={{ height: '500px', objectFit: 'cover' }}
           />
           <Carousel.Caption>
-            <h3>Produk Berkualitas</h3>
-            <p>Berbagai pilihan produk berkualitas dengan harga terbaik.</p>
+            <h1>Fast & Reliable Shipping</h1>
+            <p className="lead">We handle everything from packaging to delivery</p>
+            <Button as={Link} to="/tutorial" variant="light" size="lg" className="rounded-pill px-4 mt-3">
+              Learn More
+            </Button>
           </Carousel.Caption>
         </Carousel.Item>
       </Carousel>
 
+      {/* Categories Section */}
+      <section className="mb-5 py-4">
+        <Container>
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h2 className="mb-0">Shop by Category</h2>
+            <Link to="/products" className="text-decoration-none fw-bold">
+              View All <FontAwesomeIcon icon={faArrowRight} className="ms-2" />
+            </Link>
+          </div>
+          
+          {error ? (
+            <div className="alert alert-danger">{error}</div>
+          ) : categories.length === 0 ? (
+            <p>No categories available at the moment.</p>
+          ) : (
+            <Row>
+              {categories.map(category => (
+                <Col key={category.id} md={3} sm={6} className="mb-4">
+                  <Card className="category-card border-0 h-100">
+                    <Card.Img 
+                      src={category.image || '/default.webp'} 
+                      style={{ height: '200px', objectFit: 'cover' }}
+                      onError={(e) => { e.target.src = '/default.webp'; }}
+                    />
+                    <div className="category-overlay">
+                      <h5 className="mb-0">{category.name}</h5>
+                    </div>
+                    <Card.Body className="text-center p-3">
+                      <Button 
+                        as={Link} 
+                        to={`/products?category=${category.id}`} 
+                        variant="outline-primary" 
+                        className="w-100 rounded-pill"
+                      >
+                        Browse Products
+                      </Button>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          )}
+        </Container>
+      </section>
+
       {/* Featured Products Section */}
-      <section className="mb-5">
-        <h2 className="mb-4">Produk Unggulan</h2>
-        {error ? (
-          <div className="alert alert-danger">{error}</div>
-        ) : featuredProducts.length === 0 ? (
-          <p>Tidak ada produk unggulan saat ini.</p>
-        ) : (
-          <Row>
-            {featuredProducts.slice(0, 4).map(product => (
-              <Col key={product.id} md={3} sm={6} className="mb-4">
-                <Card className="h-100 shadow-sm">
-                  <Card.Img 
-                    variant="top" 
-                    src={product.image && !product.image.startsWith('http') ? `/${product.image}` : product.image || '/placeholder.jpg'} 
-                    style={{ height: '200px', objectFit: 'cover' }}
-                  />
-                  <Card.Body className="d-flex flex-column">
-                    <Card.Title>{product.name}</Card.Title>
-                    <Card.Text className="text-muted mb-0">
-                      Rp {parseFloat(product.price).toLocaleString('id-ID')}
-                    </Card.Text>
-                    <div className="mt-auto pt-3">
+      <section className="mb-5 py-4 bg-light">
+        <Container>
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h2 className="mb-0">Featured Products</h2>
+            <Link to="/products" className="text-decoration-none fw-bold">
+              View All <FontAwesomeIcon icon={faArrowRight} className="ms-2" />
+            </Link>
+          </div>
+          
+          {error ? (
+            <div className="alert alert-danger">{error}</div>
+          ) : featuredProducts.length === 0 ? (
+            <p>No featured products available at the moment.</p>
+          ) : (
+            <Row>
+              {featuredProducts.slice(0, 4).map(product => (
+                <Col key={product.id} md={3} sm={6} className="mb-4">
+                  <Card className="product-card h-100 border-0">
+                    <div className="position-relative">
+                      <Card.Img 
+                        variant="top" 
+                        src={product.image || '/default.webp'} 
+                        style={{ height: '250px', objectFit: 'cover' }}
+                        onError={(e) => { e.target.src = '/default.webp'; }}
+                      />
+                      <div className="product-actions position-absolute w-100 d-flex justify-content-center" 
+                           style={{ bottom: '10px', opacity: 0, transition: 'opacity 0.3s ease' }}>
+                        <Button 
+                          as={Link}
+                          to={`/products/${product.id}`}
+                          variant="light" 
+                          className="rounded-circle p-2 mx-1 shadow-sm"
+                          style={{ width: '40px', height: '40px' }}
+                        >
+                          <FontAwesomeIcon icon={faEye} />
+                        </Button>
+                        <Button 
+                          variant="primary" 
+                          className="rounded-circle p-2 mx-1 shadow-sm"
+                          style={{ width: '40px', height: '40px' }}
+                        >
+                          <FontAwesomeIcon icon={faShoppingCart} />
+                        </Button>
+                      </div>
+                    </div>
+                    <Card.Body className="p-3">
+                      <Card.Title className="product-title">{product.name}</Card.Title>
+                      <Card.Text className="product-price">
+                        {new Intl.NumberFormat('id-ID', {
+                          style: 'currency',
+                          currency: 'IDR',
+                          minimumFractionDigits: 0
+                        }).format(product.price)}
+                      </Card.Text>
                       <Button 
                         as={Link} 
                         to={`/products/${product.id}`} 
-                        variant="primary" 
-                        className="w-100"
+                        variant="outline-primary" 
+                        className="w-100 rounded-pill mt-2"
                       >
-                        Lihat Detail
+                        View Details
                       </Button>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        )}
-        <div className="text-center mt-3">
-          <Button as={Link} to="/products" variant="outline-primary">
-            Lihat Semua Produk
-          </Button>
-        </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          )}
+        </Container>
       </section>
 
-      {/* Categories Section */}
+      {/* Banner Section */}
       <section className="mb-5">
-        <h2 className="mb-4">Kategori</h2>
-        {error ? (
-          <div className="alert alert-danger">{error}</div>
-        ) : categories.length === 0 ? (
-          <p>Tidak ada kategori saat ini.</p>
-        ) : (
-          <Row>
-            {categories.map(category => (
-              <Col key={category.id} md={3} sm={6} className="mb-4">
-                <Card className="h-100 shadow-sm">
-                  <Card.Img 
-                    variant="top" 
-                    src={category.image && !category.image.startsWith('http') ? `/${category.image}` : category.image || '/placeholder.jpg'} 
-                    style={{ height: '150px', objectFit: 'cover' }}
-                  />
-                  <Card.Body className="text-center">
-                    <Card.Title>{category.name}</Card.Title>
-                    <Button 
-                      as={Link} 
-                      to={`/products?category=${category.id}`} 
-                      variant="outline-primary" 
-                      className="mt-2"
-                    >
-                      Lihat Produk
-                    </Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        )}
+        <Container>
+          <div className="position-relative rounded overflow-hidden">
+            <img 
+              src="/promotion-banner.jpg"
+              onError={(e) => { e.target.src = '/default.webp'; }} 
+              alt="Special Offer" 
+              className="w-100" 
+              style={{ height: '300px', objectFit: 'cover' }}
+            />
+            <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center">
+              <div className="container">
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="bg-white bg-opacity-75 p-4 rounded">
+                      <h2>Special Offer</h2>
+                      <p className="lead">Get 20% off on your first order</p>
+                      <Button variant="primary" className="rounded-pill px-4">
+                        Shop Now
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Container>
       </section>
 
       {/* Tutorial Section */}
-      <section className="mb-5">
-        <h2 className="mb-4">Tutorial</h2>
-        {error ? (
-          <div className="alert alert-danger">{error}</div>
-        ) : tutorials.length === 0 ? (
-          <p>Tidak ada tutorial saat ini.</p>
-        ) : (
-          <Row>
-            {tutorials.slice(0, 3).map(tutorial => (
-              <Col key={tutorial.id} md={4} className="mb-4">
-                <Card className="h-100 shadow-sm">
-                  <Card.Img 
-                    variant="top" 
-                    src={tutorial.image && !tutorial.image.startsWith('http') ? `/${tutorial.image}` : tutorial.image || '/placeholder.jpg'} 
-                    style={{ height: '200px', objectFit: 'cover' }}
-                  />
-                  <Card.Body>
-                    <Card.Title>{tutorial.title}</Card.Title>
-                    <Card.Text>
-                      {tutorial.content ? tutorial.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : 'Tidak ada deskripsi'}
-                    </Card.Text>
-                    <Button 
-                      as={Link} 
-                      to={`/tutorial/${tutorial.id}`} 
-                      variant="outline-primary"
-                    >
-                      Baca Selengkapnya
-                    </Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
+      <section className="mb-5 py-4">
+        <Container>
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h2 className="mb-0">Dropshipping Tutorials</h2>
+            <Link to="/tutorial" className="text-decoration-none fw-bold">
+              View All <FontAwesomeIcon icon={faArrowRight} className="ms-2" />
+            </Link>
+          </div>
+          
+          {error ? (
+            <div className="alert alert-danger">{error}</div>
+          ) : tutorials.length === 0 ? (
+            <p>No tutorials available at the moment.</p>
+          ) : (
+            <Row>
+              {tutorials.slice(0, 3).map(tutorial => (
+                <Col key={tutorial.id} md={4} className="mb-4">
+                  <Card className="h-100 border-0 shadow-sm">
+                    <Card.Img 
+                      variant="top" 
+                      src={tutorial.image || '/default.webp'} 
+                      style={{ height: '200px', objectFit: 'cover' }}
+                      onError={(e) => { e.target.src = '/default.webp'; }}
+                    />
+                    <Card.Body className="p-4">
+                      <Card.Title>{tutorial.title}</Card.Title>
+                      <Card.Text>
+                        {tutorial.content ? tutorial.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : 'No description available'}
+                      </Card.Text>
+                      <Button 
+                        as={Link} 
+                        to={`/tutorial/${tutorial.id}`} 
+                        variant="outline-primary"
+                        className="rounded-pill"
+                      >
+                        Read More
+                      </Button>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          )}
+        </Container>
+      </section>
+
+      {/* Features Section */}
+      <section className="mb-5 py-5 bg-light">
+        <Container>
+          <h2 className="text-center mb-5">Why Choose Us</h2>
+          <Row className="text-center">
+            <Col md={3} sm={6} className="mb-4">
+              <div className="p-3">
+                <div className="feature-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style={{ width: '70px', height: '70px' }}>
+                  <i className="fas fa-shipping-fast fa-2x"></i>
+                </div>
+                <h5>Fast Shipping</h5>
+                <p className="text-muted">Quick delivery to your customers</p>
+              </div>
+            </Col>
+            <Col md={3} sm={6} className="mb-4">
+              <div className="p-3">
+                <div className="feature-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style={{ width: '70px', height: '70px' }}>
+                  <i className="fas fa-box-open fa-2x"></i>
+                </div>
+                <h5>Quality Products</h5>
+                <p className="text-muted">Carefully selected merchandise</p>
+              </div>
+            </Col>
+            <Col md={3} sm={6} className="mb-4">
+              <div className="p-3">
+                <div className="feature-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style={{ width: '70px', height: '70px' }}>
+                  <i className="fas fa-headset fa-2x"></i>
+                </div>
+                <h5>24/7 Support</h5>
+                <p className="text-muted">Always ready to assist you</p>
+              </div>
+            </Col>
+            <Col md={3} sm={6} className="mb-4">
+              <div className="p-3">
+                <div className="feature-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style={{ width: '70px', height: '70px' }}>
+                  <i className="fas fa-undo fa-2x"></i>
+                </div>
+                <h5>Easy Returns</h5>
+                <p className="text-muted">Hassle-free return policy</p>
+              </div>
+            </Col>
           </Row>
-        )}
-        <div className="text-center mt-3">
-          <Button as={Link} to="/tutorial" variant="outline-primary">
-            Lihat Semua Tutorial
-          </Button>
-        </div>
+        </Container>
       </section>
     </div>
   );
