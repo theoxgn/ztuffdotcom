@@ -113,8 +113,9 @@ const addToCart = async (req, res) => {
     
     if (existingCartItem) {
       // Update quantity
+      const newQuantity = existingCartItem.quantity + quantity;
       await existingCartItem.update({
-        quantity: existingCartItem.quantity + quantity
+        quantity: newQuantity
       });
       
       return successResponse(res, 200, 'Jumlah produk di keranjang berhasil diperbarui', { cartItem: existingCartItem });
@@ -185,7 +186,9 @@ const updateCartItem = async (req, res) => {
     }
     
     // Update cart item
-    await cartItem.update({ quantity });
+    await cartItem.update({ 
+      quantity
+    });
     
     return successResponse(res, 200, 'Item keranjang berhasil diperbarui', { cartItem });
   } catch (error) {
@@ -234,7 +237,7 @@ const clearCart = async (req, res) => {
   try {
     const userId = req.user.id;
     
-    // Delete all cart items
+    // Delete all cart items for user
     await Cart.destroy({
       where: { user_id: userId }
     });

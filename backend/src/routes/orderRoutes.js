@@ -13,5 +13,6 @@ router.get('/:id', authenticate, orderController.getOrderById);
 router.post('/', authenticate, orderController.createOrder);
 router.put('/:id/status', authenticate, orderController.updateOrderStatus);
 router.post('/:id/payment-proof', authenticate, uploadPaymentProof.single('payment_proof'), orderController.uploadPaymentProof);
+router.post('/:id/payment', authenticate, uploadPaymentProof.single('payment_proof'), orderController.uploadPaymentProof);
 
 module.exports = router; 

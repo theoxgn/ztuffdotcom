@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const { successResponse, errorResponse, getPagination, getPaginationData } = require('../utils/helpers');
 const fs = require('fs');
 const path = require('path');
+const sequelize = require('../config/database');
 
 /**
  * Get all orders (admin)
@@ -45,7 +46,7 @@ const getAllOrders = async (req, res) => {
         },
         {
           model: PaymentMethod,
-          as: 'payment_method',
+          as: 'paymentMethod',
           attributes: ['id', 'name']
         }
       ],
@@ -96,7 +97,7 @@ const getUserOrders = async (req, res) => {
       include: [
         {
           model: PaymentMethod,
-          as: 'payment_method',
+          as: 'paymentMethod',
           attributes: ['id', 'name']
         }
       ],
@@ -165,7 +166,7 @@ const getOrderById = async (req, res) => {
         },
         {
           model: PaymentMethod,
-          as: 'payment_method',
+          as: 'paymentMethod',
           attributes: ['id', 'name', 'account_number', 'account_name']
         }
       ]
@@ -189,6 +190,9 @@ const getOrderById = async (req, res) => {
  * @returns {object} Response object
  */
 const createOrder = async (req, res) => {
+  // Start a transaction
+  const t = await sequelize.transaction();
+  
   try {
     const userId = req.user.id;
     const { 
@@ -207,6 +211,14 @@ const createOrder = async (req, res) => {
       return errorResponse(res, 400, 'Item pesanan harus diisi');
     }
     
+    if (!shipping_address) {
+      return errorResponse(res, 400, 'Alamat pengiriman harus diisi');
+    }
+    
+    if (!shipping_city) {
+      return errorResponse(res, 400, 'Kota pengiriman harus diisi');
+    }
+    
     // Generate order number
     const orderNumber = `ORD-${Date.now()}-${userId}`;
     
@@ -221,10 +233,12 @@ const createOrder = async (req, res) => {
       
       // Validate product
       const product = await Product.findOne({
-        where: { id: product_id, is_active: true }
+        where: { id: product_id, is_active: true },
+        transaction: t
       });
       
       if (!product) {
+        await t.rollback();
         return errorResponse(res, 400, `Produk dengan ID ${product_id} tidak ditemukan`);
       }
       
@@ -234,10 +248,12 @@ const createOrder = async (req, res) => {
       
       if (variation_id) {
         variation = await ProductVariation.findOne({
-          where: { id: variation_id, product_id, is_active: true }
+          where: { id: variation_id, product_id, is_active: true },
+          transaction: t
         });
         
         if (!variation) {
+          await t.rollback();
           return errorResponse(res, 400, `Variasi produk dengan ID ${variation_id} tidak ditemukan`);
         }
         
@@ -246,11 +262,13 @@ const createOrder = async (req, res) => {
         
         // Check stock
         if (variation.stock < quantity) {
+          await t.rollback();
           return errorResponse(res, 400, `Stok tidak mencukupi untuk produk ${product.name}`);
         }
       } else {
         // Check stock
         if (product.stock < quantity) {
+          await t.rollback();
           return errorResponse(res, 400, `Stok tidak mencukupi untuk produk ${product.name}`);
         }
       }
@@ -291,7 +309,7 @@ const createOrder = async (req, res) => {
       voucher_id,
       notes,
       status: 'pending'
-    });
+    }, { transaction: t });
     
     // Create order items
     for (const item of orderItems) {
@@ -302,24 +320,29 @@ const createOrder = async (req, res) => {
         quantity: item.quantity,
         price: item.price,
         total: item.total
-      });
+      }, { transaction: t });
       
       // Update stock
       if (item.variation_id) {
-        const variation = await ProductVariation.findByPk(item.variation_id);
+        const variation = await ProductVariation.findByPk(item.variation_id, { transaction: t });
         await variation.update({
           stock: variation.stock - item.quantity
-        });
+        }, { transaction: t });
       } else {
-        const product = await Product.findByPk(item.product_id);
+        const product = await Product.findByPk(item.product_id, { transaction: t });
         await product.update({
           stock: product.stock - item.quantity
-        });
+        }, { transaction: t });
       }
     }
     
+    // Commit transaction
+    await t.commit();
+    
     return successResponse(res, 201, 'Pesanan berhasil dibuat', { order });
   } catch (error) {
+    // Rollback transaction on error
+    await t.rollback();
     console.error('Error in createOrder:', error);
     return errorResponse(res, 500, 'Terjadi kesalahan pada server');
   }
@@ -387,7 +410,7 @@ const updateOrderStatus = async (req, res) => {
     }
     
     // Update order status
-    await order.update({ status });
+    await order.update({ status: status });
     
     return successResponse(res, 200, 'Status pesanan berhasil diperbarui', { order });
   } catch (error) {
@@ -436,12 +459,12 @@ const uploadPaymentProof = async (req, res) => {
       }
     }
     
-    // Update order
-    await order.update({
-      payment_proof: paymentProofPath,
-      payment_date: new Date(),
-      status: 'processing'
-    });
+          // Update order
+      await order.update({
+        payment_proof: paymentProofPath,
+        payment_date: new Date(),
+        status: 'processing'
+      });
     
     return successResponse(res, 200, 'Bukti pembayaran berhasil diunggah', { order });
   } catch (error) {

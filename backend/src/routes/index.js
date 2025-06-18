@@ -11,6 +11,7 @@ const voucherRoutes = require('./voucherRoutes');
 const tutorialRoutes = require('./tutorialRoutes');
 const paymentMethodRoutes = require('./paymentMethodRoutes');
 const pointRoutes = require('./pointRoutes');
+const adminRoutes = require('./adminRoutes');
 
 // Define API routes
 router.use('/auth', authRoutes);
@@ -22,6 +23,7 @@ router.use('/vouchers', voucherRoutes);
 router.use('/tutorials', tutorialRoutes);
 router.use('/payment-methods', paymentMethodRoutes);
 router.use('/points', pointRoutes);
+router.use('/admin', adminRoutes);
 
 // API health check
 router.get('/', (req, res) => {

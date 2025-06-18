@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setLoading(true);
       
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post('/api/auth/login', {
         email,
         password
       });
@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setLoading(true);
       
-      const response = await axios.post('http://localhost:5000/api/auth/register', userData);
+      const response = await axios.post('/api/auth/register', userData);
 
       const { token, user } = response.data.data;
       
@@ -125,7 +125,7 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setLoading(true);
       
-      const response = await axios.put('http://localhost:5000/api/auth/profile', userData);
+      const response = await axios.put('/api/auth/profile', userData);
 
       const { user } = response.data.data;
       
@@ -151,7 +151,7 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setLoading(true);
       
-      await axios.put('http://localhost:5000/api/auth/change-password', {
+      await axios.put('/api/auth/change-password', {
         current_password: currentPassword,
         new_password: newPassword
       });

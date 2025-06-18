@@ -6,6 +6,7 @@ const { uploadProductImage } = require('../middlewares/upload');
 
 // Public routes
 router.get('/', productController.getAllProducts);
+router.get('/featured', productController.getFeaturedProducts);
 router.get('/:id', productController.getProductById);
 
 // Admin routes

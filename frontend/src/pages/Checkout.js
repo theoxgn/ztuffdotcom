@@ -9,20 +9,21 @@ import CartContext from '../contexts/CartContext';
 
 const Checkout = () => {
   const { currentUser } = useContext(AuthContext);
-  const { cartItems, cartTotal, clearCart } = useContext(CartContext);
+  const { cartItems, getSubtotal, clearCart } = useContext(CartContext);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [shippingCost, setShippingCost] = useState(0);
   const [paymentMethods, setPaymentMethods] = useState([]);
+  const [shippingCity, setShippingCity] = useState(currentUser?.city || '');
   const navigate = useNavigate();
 
   // Fetch payment methods
   useEffect(() => {
     const fetchPaymentMethods = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/payment-methods');
+        const response = await axios.get('/api/payment-methods');
         setPaymentMethods(response.data.data.paymentMethods || []);
       } catch (error) {
         console.error('Error fetching payment methods:', error);
@@ -31,6 +32,12 @@ const Checkout = () => {
 
     fetchPaymentMethods();
   }, []);
+
+  // Update shipping cost when city changes
+  useEffect(() => {
+    const cost = calculateShippingCost(shippingCity);
+    setShippingCost(cost);
+  }, [shippingCity]);
 
   // Validation schema
   const checkoutSchema = Yup.object({
@@ -95,7 +102,7 @@ const Checkout = () => {
         }))
       };
       
-      const response = await axios.post('http://localhost:5000/api/orders', orderData);
+      const response = await axios.post('/api/orders', orderData);
       
       if (response.data.success) {
         setSuccess(true);
@@ -221,11 +228,11 @@ const Checkout = () => {
                   isSubmitting,
                   setFieldValue
                 }) => {
-                  // Update shipping cost when city changes
-                  React.useEffect(() => {
-                    const cost = calculateShippingCost(values.shipping_city);
-                    setShippingCost(cost);
-                  }, [values.shipping_city]);
+                  // Sync shipping city with state for shipping cost calculation
+                  const handleCityChange = (e) => {
+                    handleChange(e);
+                    setShippingCity(e.target.value);
+                  };
                   
                   return (
                     <Form onSubmit={handleSubmit}>
@@ -288,7 +295,7 @@ const Checkout = () => {
                               type="text"
                               name="shipping_city"
                               value={values.shipping_city}
-                              onChange={handleChange}
+                              onChange={handleCityChange}
                               onBlur={handleBlur}
                               isInvalid={touched.shipping_city && errors.shipping_city}
                             />
@@ -398,7 +405,7 @@ const Checkout = () => {
                 {cartItems.map(item => (
                   <div key={item.id} className="d-flex justify-content-between mb-2">
                     <div>
-                      <span className="fw-bold">{item.quantity}x</span> {item.name}
+                      <span className="fw-bold">{item.quantity}x</span> {item.product?.name || 'Produk'}
                       {item.size && item.color && (
                         <small className="d-block text-muted">
                           {item.size} - {item.color}
@@ -416,7 +423,7 @@ const Checkout = () => {
               
               <div className="d-flex justify-content-between mb-2">
                 <div>Subtotal</div>
-                <div>Rp {cartTotal.toLocaleString('id-ID')}</div>
+                <div>Rp {getSubtotal().toLocaleString('id-ID')}</div>
               </div>
               
               <div className="d-flex justify-content-between mb-2">
@@ -428,7 +435,7 @@ const Checkout = () => {
               
               <div className="d-flex justify-content-between fw-bold">
                 <div>Total</div>
-                <div>Rp {(cartTotal + shippingCost).toLocaleString('id-ID')}</div>
+                <div>Rp {(getSubtotal() + shippingCost).toLocaleString('id-ID')}</div>
               </div>
             </Card.Body>
           </Card>

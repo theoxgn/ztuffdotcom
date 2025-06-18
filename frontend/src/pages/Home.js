@@ -18,19 +18,22 @@ const Home = () => {
         setError(null);
         
         // Fetch featured products
-        const productsResponse = await axios.get('http://localhost:5000/api/products/featured');
-        setFeaturedProducts(productsResponse.data.data.products || []);
+        const productsResponse = await axios.get('/api/products/featured');
+        setFeaturedProducts(Array.isArray(productsResponse.data.data.products) ? productsResponse.data.data.products : []);
         
         // Fetch categories
-        const categoriesResponse = await axios.get('http://localhost:5000/api/categories');
-        setCategories(categoriesResponse.data.data.categories || []);
+        const categoriesResponse = await axios.get('/api/categories');
+        setCategories(Array.isArray(categoriesResponse.data.data.categories) ? categoriesResponse.data.data.categories : []);
         
         // Fetch tutorials
-        const tutorialsResponse = await axios.get('http://localhost:5000/api/tutorials');
-        setTutorials(tutorialsResponse.data.data.tutorials || []);
+        const tutorialsResponse = await axios.get('/api/tutorials');
+        setTutorials(Array.isArray(tutorialsResponse.data.data.tutorials) ? tutorialsResponse.data.data.tutorials : []);
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Gagal memuat data. Silakan coba lagi.');
+        setFeaturedProducts([]);
+        setCategories([]);
+        setTutorials([]);
       } finally {
         setLoading(false);
       }
@@ -92,7 +95,7 @@ const Home = () => {
                 <Card className="h-100 shadow-sm">
                   <Card.Img 
                     variant="top" 
-                    src={product.image ? `http://localhost:5000/${product.image}` : '/placeholder.jpg'} 
+                    src={product.image && !product.image.startsWith('http') ? `/${product.image}` : product.image || '/placeholder.jpg'} 
                     style={{ height: '200px', objectFit: 'cover' }}
                   />
                   <Card.Body className="d-flex flex-column">
@@ -137,7 +140,7 @@ const Home = () => {
                 <Card className="h-100 shadow-sm">
                   <Card.Img 
                     variant="top" 
-                    src={category.image ? `http://localhost:5000/${category.image}` : '/placeholder.jpg'} 
+                    src={category.image && !category.image.startsWith('http') ? `/${category.image}` : category.image || '/placeholder.jpg'} 
                     style={{ height: '150px', objectFit: 'cover' }}
                   />
                   <Card.Body className="text-center">
@@ -172,13 +175,13 @@ const Home = () => {
                 <Card className="h-100 shadow-sm">
                   <Card.Img 
                     variant="top" 
-                    src={tutorial.image ? `http://localhost:5000/${tutorial.image}` : '/placeholder.jpg'} 
+                    src={tutorial.image && !tutorial.image.startsWith('http') ? `/${tutorial.image}` : tutorial.image || '/placeholder.jpg'} 
                     style={{ height: '200px', objectFit: 'cover' }}
                   />
                   <Card.Body>
-                    <Card.Title>{tutorial.nama}</Card.Title>
+                    <Card.Title>{tutorial.title}</Card.Title>
                     <Card.Text>
-                      {tutorial.description.substring(0, 100)}...
+                      {tutorial.content ? tutorial.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : 'Tidak ada deskripsi'}
                     </Card.Text>
                     <Button 
                       as={Link} 

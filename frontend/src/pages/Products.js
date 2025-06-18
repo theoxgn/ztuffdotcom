@@ -43,18 +43,20 @@ const Products = () => {
         if (priceMax) params.append('max', priceMax);
         
         // Fetch products
-        const productsResponse = await axios.get(`http://localhost:5000/api/products?${params.toString()}`);
-        setProducts(productsResponse.data.data.products || []);
+        const productsResponse = await axios.get(`/api/products?${params.toString()}`);
+        setProducts(Array.isArray(productsResponse.data.data.products) ? productsResponse.data.data.products : []);
         setTotalPages(productsResponse.data.data.totalPages || 1);
         
         // Fetch categories (only once)
         if (categories.length === 0) {
-          const categoriesResponse = await axios.get('http://localhost:5000/api/categories');
-          setCategories(categoriesResponse.data.data.categories || []);
+          const categoriesResponse = await axios.get('/api/categories');
+          setCategories(Array.isArray(categoriesResponse.data.data.categories) ? categoriesResponse.data.data.categories : []);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Gagal memuat data. Silakan coba lagi.');
+        setProducts([]);
+        setCategories([]);
       } finally {
         setLoading(false);
       }
@@ -336,7 +338,7 @@ const Products = () => {
                   <div className="product-image-container">
                     <Card.Img 
                       variant="top" 
-                      src={product.image ? `http://localhost:5000/${product.image}` : '/placeholder.jpg'} 
+                      src={product.image ? `${product.image}` : '/placeholder.jpg'} 
                       alt={product.name}
                       className="product-image"
                     />

@@ -31,11 +31,14 @@ const Vouchers = () => {
   const fetchVouchers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/admin/vouchers');
-      setVouchers(response.data.data);
+      const response = await axios.get('/api/admin/vouchers');
+      // Pastikan vouchers selalu array
+      setVouchers(Array.isArray(response.data.data.vouchers) ? response.data.data.vouchers : []);
       setError(null);
     } catch (err) {
+      console.error('Error fetching vouchers:', err);
       setError('Gagal memuat data voucher. Silakan coba lagi nanti.');
+      setVouchers([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -93,9 +96,9 @@ const Vouchers = () => {
     
     try {
       if (modalMode === 'add') {
-        await axios.post('http://localhost:5000/api/admin/vouchers', formData);
+        await axios.post('/api/admin/vouchers', formData);
       } else {
-        await axios.put(`http://localhost:5000/api/admin/vouchers/${selectedVoucher.id}`, formData);
+        await axios.put(`/api/admin/vouchers/${selectedVoucher.id}`, formData);
       }
       
       setShowModal(false);
@@ -109,7 +112,7 @@ const Vouchers = () => {
   const handleDeleteVoucher = async (voucherId) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus voucher ini?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/admin/vouchers/${voucherId}`);
+        await axios.delete(`/api/admin/vouchers/${voucherId}`);
         fetchVouchers();
       } catch (err) {
         setError('Gagal menghapus voucher. Silakan coba lagi.');

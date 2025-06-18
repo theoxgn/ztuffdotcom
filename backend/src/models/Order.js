@@ -20,13 +20,22 @@ const Order = sequelize.define('Order', {
     allowNull: false,
     unique: true
   },
-  total_amount: {
+  subtotal: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false
+  },
+  total: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
   },
   shipping_cost: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
+    defaultValue: 0
+  },
+  total_weight: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
     defaultValue: 0
   },
   payment_method_id: {
@@ -37,29 +46,26 @@ const Order = sequelize.define('Order', {
       key: 'id'
     }
   },
-  payment_status: {
-    type: DataTypes.ENUM('pending', 'paid', 'failed'),
-    defaultValue: 'pending'
-  },
   payment_proof: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  order_status: {
-    type: DataTypes.ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled'),
-    defaultValue: 'pending'
-  },
-  tracking_number: {
-    type: DataTypes.STRING,
+  payment_date: {
+    type: DataTypes.DATE,
     allowNull: true
   },
-  shipping_name: {
-    type: DataTypes.STRING,
-    allowNull: false
+  voucher_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Vouchers',
+      key: 'id'
+    }
   },
-  shipping_phone: {
-    type: DataTypes.STRING,
-    allowNull: false
+  discount_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0
   },
   shipping_address: {
     type: DataTypes.TEXT,
@@ -81,22 +87,14 @@ const Order = sequelize.define('Order', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  voucher_id: {
-    type: DataTypes.UUID,
-    allowNull: true,
-    references: {
-      model: 'Vouchers',
-      key: 'id'
-    }
+  status: {
+    type: DataTypes.ENUM('pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'),
+    defaultValue: 'pending'
   },
-  discount_amount: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-    defaultValue: 0
+  tracking_number: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
-}, {
-  tableName: 'orders',
-  timestamps: true
 });
 
 module.exports = Order;

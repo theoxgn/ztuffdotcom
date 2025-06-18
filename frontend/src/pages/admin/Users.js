@@ -27,11 +27,14 @@ const Users = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/admin/users');
-      setUsers(response.data.data);
+      const response = await axios.get('/api/admin/users');
+      // Pastikan users selalu array
+      setUsers(Array.isArray(response.data.data.users) ? response.data.data.users : []);
       setError(null);
     } catch (err) {
+      console.error('Error fetching users:', err);
       setError('Gagal memuat data pengguna. Silakan coba lagi nanti.');
+      setUsers([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -76,9 +79,9 @@ const Users = () => {
     
     try {
       if (modalMode === 'add') {
-        await axios.post('http://localhost:5000/api/admin/users', formData);
+        await axios.post('/api/admin/users', formData);
       } else {
-        await axios.put(`http://localhost:5000/api/admin/users/${selectedUser.id}`, formData);
+        await axios.put(`/api/admin/users/${selectedUser.id}`, formData);
       }
       
       setShowModal(false);
@@ -92,7 +95,7 @@ const Users = () => {
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/admin/users/${userId}`);
+        await axios.delete(`/api/admin/users/${userId}`);
         fetchUsers();
       } catch (err) {
         setError('Gagal menghapus pengguna. Silakan coba lagi.');

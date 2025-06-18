@@ -28,11 +28,14 @@ const Tutorials = () => {
   const fetchTutorials = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/admin/tutorials');
-      setTutorials(response.data.data);
+      const response = await axios.get('/api/admin/tutorials');
+      // Pastikan tutorials selalu array
+      setTutorials(Array.isArray(response.data.data.tutorials) ? response.data.data.tutorials : []);
       setError(null);
     } catch (err) {
+      console.error('Error fetching tutorials:', err);
       setError('Gagal memuat data tutorial. Silakan coba lagi nanti.');
+      setTutorials([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -105,13 +108,13 @@ const Tutorials = () => {
       }
       
       if (modalMode === 'add') {
-        await axios.post('http://localhost:5000/api/admin/tutorials', formDataToSend, {
+        await axios.post('/api/admin/tutorials', formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
         });
       } else {
-        await axios.put(`http://localhost:5000/api/admin/tutorials/${selectedTutorial.id}`, formDataToSend, {
+        await axios.put(`/api/admin/tutorials/${selectedTutorial.id}`, formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
@@ -129,7 +132,7 @@ const Tutorials = () => {
   const handleDeleteTutorial = async (tutorialId) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus tutorial ini?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/admin/tutorials/${tutorialId}`);
+        await axios.delete(`/api/admin/tutorials/${tutorialId}`);
         fetchTutorials();
       } catch (err) {
         setError('Gagal menghapus tutorial. Silakan coba lagi.');

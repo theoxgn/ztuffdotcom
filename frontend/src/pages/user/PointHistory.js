@@ -12,7 +12,7 @@ const PointHistory = () => {
   useEffect(() => {
     const fetchPointHistory = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/user/points/history');
+        const response = await axios.get('/api/user/points/history');
         setPoints(response.data.data);
         setLoading(false);
       } catch (err) {

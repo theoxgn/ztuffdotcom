@@ -603,6 +603,50 @@ const deleteProductVariation = async (req, res) => {
   }
 };
 
+/**
+ * Get featured products
+ * @param {object} req - Request object
+ * @param {object} res - Response object
+ * @returns {object} Response object
+ */
+const getFeaturedProducts = async (req, res) => {
+  try {
+    const { limit = 8 } = req.query;
+    
+    // Get featured products
+    const products = await Product.findAll({
+      where: { 
+        is_featured: true,
+        is_active: true
+      },
+      limit: parseInt(limit),
+      include: [
+        {
+          model: Category,
+          as: 'category',
+          attributes: ['id', 'name']
+        },
+        {
+          model: ProductImage,
+          as: 'images',
+          attributes: ['id', 'image', 'is_primary'],
+          limit: 1,
+          where: { is_primary: true },
+          required: false
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+    
+    return successResponse(res, 200, 'Produk unggulan berhasil dimuat', {
+      products
+    });
+  } catch (error) {
+    console.error('Error in getFeaturedProducts:', error);
+    return errorResponse(res, 500, 'Terjadi kesalahan pada server');
+  }
+};
+
 module.exports = {
   getAllProducts,
   getProductById,
@@ -613,5 +657,6 @@ module.exports = {
   deleteProductImage,
   addProductVariation,
   updateProductVariation,
-  deleteProductVariation
+  deleteProductVariation,
+  getFeaturedProducts
 }; 

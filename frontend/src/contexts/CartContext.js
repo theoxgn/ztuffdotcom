@@ -25,7 +25,7 @@ export const CartProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get('http://localhost:5000/api/cart');
+      const response = await axios.get('/api/cart');
       setCartItems(response.data.data.cartItems || []);
     } catch (error) {
       console.error('Error fetching cart:', error);
@@ -36,13 +36,13 @@ export const CartProvider = ({ children }) => {
   };
 
   // Add item to cart
-  const addToCart = async (productId, quantity, variationId = null, size = null, color = null) => {
+  const addToCart = async (product_id, quantity, variationId = null, size = null, color = null) => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await axios.post('http://localhost:5000/api/cart', {
-        productId,
+      const response = await axios.post('/api/cart', {
+        product_id,
         quantity,
         variationId,
         size,
@@ -67,7 +67,7 @@ export const CartProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      await axios.put(`http://localhost:5000/api/cart/${cartId}`, { quantity });
+      await axios.put(`/api/cart/${cartId}`, { quantity });
       
       await fetchCartItems(); // Refresh cart items
       return { success: true };
@@ -87,7 +87,7 @@ export const CartProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      await axios.delete(`http://localhost:5000/api/cart/${cartId}`);
+      await axios.delete(`/api/cart/${cartId}`);
       
       await fetchCartItems(); // Refresh cart items
       return { success: true };
@@ -107,7 +107,7 @@ export const CartProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      await axios.delete('http://localhost:5000/api/cart');
+      await axios.delete('/api/cart');
       
       setCartItems([]);
       return { success: true };

@@ -31,9 +31,6 @@ const Tutorial = sequelize.define('Tutorial', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   }
-}, {
-  tableName: 'tutorial',
-  timestamps: true
 });
 
 module.exports = Tutorial; 

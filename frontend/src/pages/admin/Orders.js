@@ -22,11 +22,14 @@ const OrderList = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/admin/orders');
-      setOrders(response.data.data);
+      const response = await axios.get('/api/admin/orders');
+      // Pastikan orders selalu array
+      setOrders(Array.isArray(response.data.data.orders) ? response.data.data.orders : []);
       setError(null);
     } catch (err) {
+      console.error('Error fetching orders:', err);
       setError('Gagal memuat data pesanan. Silakan coba lagi nanti.');
+      setOrders([]); // Set empty array on error
     } finally {
       setLoading(false);
     }

@@ -29,7 +29,7 @@ const OrderHistory = () => {
         setLoading(true);
         setError(null);
         
-        const response = await axios.get('http://localhost:5000/api/orders');
+        const response = await axios.get('/api/orders');
         setOrders(response.data.data.orders || []);
       } catch (error) {
         console.error('Error fetching orders:', error);
@@ -73,7 +73,7 @@ const OrderHistory = () => {
       const formData = new FormData();
       formData.append('payment_proof', paymentFile);
       
-      await axios.post(`http://localhost:5000/api/orders/${selectedOrder.id}/payment`, formData, {
+      await axios.post(`/api/orders/${selectedOrder.id}/payment`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -82,7 +82,7 @@ const OrderHistory = () => {
       setUploadSuccess(true);
       
       // Update orders list
-      const response = await axios.get('http://localhost:5000/api/orders');
+      const response = await axios.get('/api/orders');
       setOrders(response.data.data.orders || []);
       
       // Close modal after 2 seconds
@@ -106,7 +106,7 @@ const OrderHistory = () => {
     setDetailsLoading(true);
     
     try {
-      const response = await axios.get(`http://localhost:5000/api/orders/${order.id}`);
+      const response = await axios.get(`/api/orders/${order.id}`);
       setOrderDetails(response.data.data.order);
     } catch (error) {
       console.error('Error fetching order details:', error);
@@ -402,7 +402,7 @@ const OrderHistory = () => {
                   <hr />
                   <div className="text-center">
                     <img 
-                      src={`http://localhost:5000/${orderDetails.payment_proof}`} 
+                      src={`/${orderDetails.payment_proof}`} 
                       alt="Bukti Pembayaran" 
                       className="img-fluid" 
                       style={{ maxHeight: '300px' }}

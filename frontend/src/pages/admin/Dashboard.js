@@ -28,8 +28,12 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchAdminData = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/admin/dashboard');
-        setAdminData(response.data.data);
+        const response = await axios.get('/api/admin/dashboard');
+        if (response.data && response.data.data) {
+          setAdminData(response.data.data);
+        } else {
+          console.error('Invalid response format:', response.data);
+        }
       } catch (error) {
         console.error('Error fetching admin data:', error);
       } finally {

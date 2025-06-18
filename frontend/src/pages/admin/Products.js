@@ -24,11 +24,13 @@ const ProductList = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/admin/products');
-      setProducts(response.data.data);
+      const response = await axios.get('/api/admin/products');
+      setProducts(Array.isArray(response.data.data.products) ? response.data.data.products : []);
       setError(null);
     } catch (err) {
+      console.error('Error fetching products:', err);
       setError('Gagal memuat data produk. Silakan coba lagi nanti.');
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -36,10 +38,11 @@ const ProductList = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/categories');
-      setCategories(response.data.data);
+      const response = await axios.get('/api/categories');
+      setCategories(Array.isArray(response.data.data.categories) ? response.data.data.categories : []);
     } catch (err) {
       console.error('Error fetching categories:', err);
+      setCategories([]);
     }
   };
 
@@ -47,7 +50,7 @@ const ProductList = () => {
   const handleDeleteProduct = async (productId) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/admin/products/${productId}`);
+        await axios.delete(`/api/admin/products/${productId}`);
         fetchProducts();
       } catch (err) {
         setError('Gagal menghapus produk. Silakan coba lagi.');

@@ -25,11 +25,14 @@ const Categories = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/admin/categories');
-      setCategories(response.data.data);
+      const response = await axios.get('/api/admin/categories');
+      // Pastikan categories selalu array
+      setCategories(Array.isArray(response.data.data.categories) ? response.data.data.categories : []);
       setError(null);
     } catch (err) {
+      console.error('Error fetching categories:', err);
       setError('Gagal memuat data kategori. Silakan coba lagi nanti.');
+      setCategories([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -70,9 +73,9 @@ const Categories = () => {
     
     try {
       if (modalMode === 'add') {
-        await axios.post('http://localhost:5000/api/admin/categories', formData);
+        await axios.post('/api/admin/categories', formData);
       } else {
-        await axios.put(`http://localhost:5000/api/admin/categories/${selectedCategory.id}`, formData);
+        await axios.put(`/api/admin/categories/${selectedCategory.id}`, formData);
       }
       
       setShowModal(false);
@@ -86,7 +89,7 @@ const Categories = () => {
   const handleDeleteCategory = async (categoryId) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus kategori ini?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/admin/categories/${categoryId}`);
+        await axios.delete(`/api/admin/categories/${categoryId}`);
         fetchCategories();
       } catch (err) {
         setError('Gagal menghapus kategori. Silakan coba lagi.');

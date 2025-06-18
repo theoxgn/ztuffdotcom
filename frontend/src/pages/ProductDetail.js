@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Row, Col, Card, Button, Spinner, Alert, Form, Tabs, Tab, Image } from 'react-bootstrap';
+import { Row, Col, Card, Button, Spinner, Alert, Form, Tabs, Tab, Image, Badge } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShoppingCart, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
@@ -30,7 +30,7 @@ const ProductDetail = () => {
         setLoading(true);
         setError(null);
         
-        const response = await axios.get(`http://localhost:5000/api/products/${id}`);
+        const response = await axios.get(`/api/products/${id}`);
         setProduct(response.data.data.product);
         setVariations(response.data.data.variations || []);
         
@@ -169,7 +169,9 @@ const ProductDetail = () => {
             <>
               <div className="product-main-image mb-3">
                 <Image 
-                  src={`http://localhost:5000/${product.images[activeImage].image}`}
+                  src={product.images[activeImage].image && !product.images[activeImage].image.startsWith('http') 
+                    ? `/${product.images[activeImage].image}` 
+                    : product.images[activeImage].image || '/placeholder.jpg'}
                   alt={product.name}
                   fluid
                   className="rounded shadow-sm"
@@ -180,7 +182,9 @@ const ProductDetail = () => {
                 {product.images.map((image, index) => (
                   <Col xs={3} key={image.id} className="mb-2">
                     <Image 
-                      src={`http://localhost:5000/${image.image}`}
+                      src={image.image && !image.image.startsWith('http') 
+                        ? `/${image.image}` 
+                        : image.image || '/placeholder.jpg'}
                       alt={`${product.name} - ${index + 1}`}
                       thumbnail
                       className={`cursor-pointer ${activeImage === index ? 'border-primary' : ''}`}
@@ -193,7 +197,7 @@ const ProductDetail = () => {
             </>
           ) : (
             <Image 
-              src={product.image ? `http://localhost:5000/${product.image}` : '/placeholder.jpg'}
+              src={product.image && !product.image.startsWith('http') ? `/${product.image}` : product.image || '/placeholder.jpg'}
               alt={product.name}
               fluid
               className="rounded shadow-sm"

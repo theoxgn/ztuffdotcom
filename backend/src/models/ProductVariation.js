@@ -36,9 +36,6 @@ const ProductVariation = sequelize.define('ProductVariation', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   }
-}, {
-  tableName: 'product_variations',
-  timestamps: true
 });
 
 module.exports = ProductVariation; 
