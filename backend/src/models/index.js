@@ -15,6 +15,7 @@ const Point = require('./Point');
 const Tutorial = require('./Tutorial');
 const Wishlist = require('./Wishlist');
 const Setting = require('./Setting');
+const Review = require('./Review');
 
 // Define associations
 
@@ -82,6 +83,18 @@ Wishlist.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 Product.hasMany(Wishlist, { foreignKey: 'product_id' });
 Wishlist.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
 
+// User - Review
+User.hasMany(Review, { foreignKey: 'user_id', as: 'reviews' });
+Review.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// Product - Review
+Product.hasMany(Review, { foreignKey: 'product_id', as: 'reviews' });
+Review.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
+
+// Order - Review
+Order.hasMany(Review, { foreignKey: 'order_id' });
+Review.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
+
 // Export models
 module.exports = {
   sequelize,
@@ -98,5 +111,6 @@ module.exports = {
   Point,
   Tutorial,
   Wishlist,
-  Setting
+  Setting,
+  Review
 }; 

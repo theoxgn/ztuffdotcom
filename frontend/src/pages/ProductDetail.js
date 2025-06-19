@@ -16,6 +16,7 @@ import axios from 'axios';
 import CartContext from '../contexts/CartContext';
 import AuthContext from '../contexts/AuthContext';
 import WishlistContext from '../contexts/WishlistContext';
+import { ReviewForm, ReviewList } from '../components';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -36,6 +37,8 @@ const ProductDetail = () => {
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewStats, setReviewStats] = useState(null);
 
   // Fetch product data
   useEffect(() => {
@@ -310,9 +313,28 @@ const ProductDetail = () => {
               
               <h1 className="mb-3">{product.name}</h1>
               
-              <h2 className="text-primary fw-bold mb-4">
-                Rp {parseFloat(selectedVariation?.price || product.price).toLocaleString('id-ID')}
-              </h2>
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                <h2 className="text-primary fw-bold mb-0">
+                  Rp {parseFloat(selectedVariation?.price || product.price).toLocaleString('id-ID')}
+                </h2>
+                {reviewStats && reviewStats.totalReviews > 0 && (
+                  <div className="d-flex align-items-center">
+                    <div className="d-flex align-items-center me-2">
+                      {Array.from({ length: 5 }, (_, index) => (
+                        <FontAwesomeIcon
+                          key={index}
+                          icon={faStar}
+                          className={index < Math.round(reviewStats.averageRating) ? 'text-warning' : 'text-muted'}
+                          size="sm"
+                        />
+                      ))}
+                    </div>
+                    <span className="text-muted">
+                      {reviewStats.averageRating} ({reviewStats.totalReviews} review{reviewStats.totalReviews !== 1 ? 's' : ''})
+                    </span>
+                  </div>
+                )}
+              </div>
               
               <div className="mb-4">
                 {product.stock > 0 ? (
@@ -522,10 +544,25 @@ const ProductDetail = () => {
                 </Card.Body>
               </Card>
             </Tab>
-            <Tab eventKey="reviews" title="Reviews">
+            <Tab eventKey="reviews" title={`Reviews ${reviewStats ? `(${reviewStats.totalReviews})` : ''}`}>
               <Card className="border-0 shadow-sm">
                 <Card.Body className="p-4">
-                  <p className="text-center text-muted">No reviews yet for this product.</p>
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <h5 className="mb-0">Customer Reviews</h5>
+                    {currentUser && (
+                      <Button 
+                        variant="primary" 
+                        size="sm"
+                        onClick={() => setShowReviewForm(true)}
+                      >
+                        Write Review
+                      </Button>
+                    )}
+                  </div>
+                  <ReviewList 
+                    productId={product.id} 
+                    onReviewsLoaded={setReviewStats}
+                  />
                 </Card.Body>
               </Card>
             </Tab>
@@ -572,7 +609,7 @@ const ProductDetail = () => {
                           </h5>
                           <div className="d-flex align-items-center">
                             <FontAwesomeIcon icon={faStar} className="text-warning me-1" size="sm" />
-                            <small className="text-muted">4.5</small>
+                            <small className="text-muted">{reviewStats?.averageRating || '0.0'}</small>
                           </div>
                         </div>
                         <Button 
@@ -596,6 +633,17 @@ const ProductDetail = () => {
             </div>
           )}
         </div>
+        
+        {/* Review Form Modal */}
+        <ReviewForm 
+          show={showReviewForm}
+          onHide={() => setShowReviewForm(false)}
+          productId={product.id}
+          onReviewSubmitted={() => {
+            // Refresh review stats after new review
+            window.location.reload();
+          }}
+        />
       </Container>
     </div>
   );
