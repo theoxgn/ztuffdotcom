@@ -242,6 +242,12 @@ const Checkout = () => {
         const { snap_token, order_data } = response.data.data;
         setOrderData(order_data);
         
+        // Check if Midtrans Snap is loaded
+        if (!window.snap) {
+          setError('Payment gateway belum tersedia. Silakan refresh halaman.');
+          return;
+        }
+
         // Open Midtrans Snap
         window.snap.pay(snap_token, {
           onSuccess: function(result) {

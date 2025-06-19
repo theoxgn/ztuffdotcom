@@ -21,7 +21,12 @@ router.put('/orders/:id/status', authenticate, isAdmin, adminController.updateOr
 router.post('/orders/:id/notes', authenticate, isAdmin, adminController.addOrderNote);
 
 // Admin vouchers endpoints
-router.get('/vouchers', authenticate, isAdmin, adminController.getAllVouchers);
+const voucherController = require('../controllers/voucherController');
+router.get('/vouchers', authenticate, isAdmin, voucherController.getAllVouchers);
+router.get('/vouchers/:id', authenticate, isAdmin, voucherController.getVoucherById);
+router.post('/vouchers', authenticate, isAdmin, voucherController.createVoucher);
+router.put('/vouchers/:id', authenticate, isAdmin, voucherController.updateVoucher);
+router.delete('/vouchers/:id', authenticate, isAdmin, voucherController.deleteVoucher);
 
 // Admin tutorials endpoints
 router.get('/tutorials', authenticate, isAdmin, adminController.getAllTutorials);

@@ -510,7 +510,9 @@ const ProductDetail = () => {
             <Tab eventKey="description" title="Description">
               <Card className="border-0 shadow-sm">
                 <Card.Body className="p-4">
-                  <div dangerouslySetInnerHTML={{ __html: product.description }} />
+                  <div style={{ whiteSpace: 'pre-wrap' }}>
+                    {product.description}
+                  </div>
                 </Card.Body>
               </Card>
             </Tab>

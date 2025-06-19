@@ -14,7 +14,14 @@ const getAllVouchers = async (req, res) => {
       order: [['createdAt', 'DESC']]
     });
     
-    return successResponse(res, 200, 'Voucher berhasil dimuat', { vouchers });
+    // Transform is_active to status and used_count to usage_count for frontend compatibility
+    const transformedVouchers = vouchers.map(voucher => ({
+      ...voucher.toJSON(),
+      status: voucher.is_active ? 'active' : 'inactive',
+      usage_count: voucher.used_count
+    }));
+    
+    return successResponse(res, 200, 'Voucher berhasil dimuat', { vouchers: transformedVouchers });
   } catch (error) {
     console.error('Error in getAllVouchers:', error);
     return errorResponse(res, 500, 'Terjadi kesalahan pada server');
@@ -63,7 +70,14 @@ const getVoucherById = async (req, res) => {
       return errorResponse(res, 404, 'Voucher tidak ditemukan');
     }
     
-    return successResponse(res, 200, 'Voucher berhasil dimuat', { voucher });
+    // Transform response for frontend compatibility
+    const responseVoucher = {
+      ...voucher.toJSON(),
+      status: voucher.is_active ? 'active' : 'inactive',
+      usage_count: voucher.used_count
+    };
+    
+    return successResponse(res, 200, 'Voucher berhasil dimuat', { voucher: responseVoucher });
   } catch (error) {
     console.error('Error in getVoucherById:', error);
     return errorResponse(res, 500, 'Terjadi kesalahan pada server');
@@ -87,7 +101,8 @@ const createVoucher = async (req, res) => {
       start_date,
       end_date,
       usage_limit,
-      description
+      description,
+      status
     } = req.body;
     
     // Validate required fields
@@ -153,12 +168,19 @@ const createVoucher = async (req, res) => {
       start_date: start_date || new Date(),
       end_date: end_date || null,
       usage_limit: usage_limit || null,
-      usage_count: 0,
+      used_count: 0,
       description,
-      is_active: true
+      is_active: status === 'active'
     });
     
-    return successResponse(res, 201, 'Voucher berhasil dibuat', { voucher });
+    // Transform response for frontend compatibility
+    const responseVoucher = {
+      ...voucher.toJSON(),
+      status: voucher.is_active ? 'active' : 'inactive',
+      usage_count: voucher.used_count
+    };
+    
+    return successResponse(res, 201, 'Voucher berhasil dibuat', { voucher: responseVoucher });
   } catch (error) {
     console.error('Error in createVoucher:', error);
     return errorResponse(res, 500, 'Terjadi kesalahan pada server');
@@ -184,7 +206,7 @@ const updateVoucher = async (req, res) => {
       end_date,
       usage_limit,
       description,
-      is_active
+      status
     } = req.body;
     
     // Get voucher
@@ -221,10 +243,17 @@ const updateVoucher = async (req, res) => {
       end_date: end_date !== undefined ? end_date : voucher.end_date,
       usage_limit: usage_limit !== undefined ? usage_limit : voucher.usage_limit,
       description: description !== undefined ? description : voucher.description,
-      is_active: is_active !== undefined ? is_active : voucher.is_active
+      is_active: status !== undefined ? (status === 'active') : voucher.is_active
     });
     
-    return successResponse(res, 200, 'Voucher berhasil diperbarui', { voucher });
+    // Transform response for frontend compatibility
+    const responseVoucher = {
+      ...voucher.toJSON(),
+      status: voucher.is_active ? 'active' : 'inactive',
+      usage_count: voucher.used_count
+    };
+    
+    return successResponse(res, 200, 'Voucher berhasil diperbarui', { voucher: responseVoucher });
   } catch (error) {
     console.error('Error in updateVoucher:', error);
     return errorResponse(res, 500, 'Terjadi kesalahan pada server');

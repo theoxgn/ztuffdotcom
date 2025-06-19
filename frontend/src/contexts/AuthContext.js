@@ -9,6 +9,19 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Logout function
+  const logout = React.useCallback(() => {
+    // Remove from localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    
+    // Remove auth header
+    delete axios.defaults.headers.common['Authorization'];
+    
+    // Update state
+    setCurrentUser(null);
+  }, []);
+
   // Check if user is already logged in (from localStorage)
   useEffect(() => {
     const checkLoggedIn = async () => {
@@ -16,24 +29,39 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('token');
         
         if (token) {
-          // Check if token is expired
-          const decodedToken = jwtDecode(token);
-          const currentTime = Date.now() / 1000;
-          
-          if (decodedToken.exp < currentTime) {
-            // Token expired, logout
-            logout();
-          } else {
+          try {
+            // Check if token is expired
+            const decodedToken = jwtDecode(token);
+            const currentTime = Date.now() / 1000;
+            
+            if (decodedToken.exp < currentTime) {
+              // Token expired, logout
+              logout();
+              return;
+            }
             // Set auth header
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             
-            // Get user data
-            const userData = JSON.parse(localStorage.getItem('user'));
-            setCurrentUser(userData);
+            // Get user data safely
+            try {
+              const userStr = localStorage.getItem('user');
+              if (userStr) {
+                const userData = JSON.parse(userStr);
+                setCurrentUser(userData);
+              } else {
+                logout();
+              }
+            } catch (parseError) {
+              // Silently handle parse errors and logout
+              logout();
+            }
+          } catch (tokenError) {
+            // Silently handle token errors and logout
+            logout();
           }
         }
       } catch (error) {
-        console.error('Auth check error:', error);
+        // Silently handle auth errors and logout
         logout();
       } finally {
         setLoading(false);
@@ -41,7 +69,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     checkLoggedIn();
-  }, []);
+  }, [logout]);
 
   // Login function
   const login = async (email, password) => {
@@ -106,18 +134,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout function
-  const logout = () => {
-    // Remove from localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    
-    // Remove auth header
-    delete axios.defaults.headers.common['Authorization'];
-    
-    // Update state
-    setCurrentUser(null);
-  };
 
   // Update profile
   const updateProfile = async (userData) => {

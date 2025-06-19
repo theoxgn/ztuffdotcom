@@ -79,8 +79,9 @@ const ProductList = () => {
 
   // Filter products by search term and category
   const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === '' || product.category_id === parseInt(selectedCategory);
+    const matchesSearch = product?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const categoryId = selectedCategory ? parseInt(selectedCategory, 10) : null;
+    const matchesCategory = selectedCategory === '' || (categoryId && !isNaN(categoryId) && product.category_id === categoryId);
     return matchesSearch && matchesCategory;
   });
 
@@ -335,10 +336,24 @@ const ProductForm = ({ mode = 'add' }) => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('File harus berupa gambar (JPEG, PNG, atau WebP)');
+        return;
+      }
+      
+      // Validate file size (max 10MB for products)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('Ukuran file maksimal 10MB');
+        return;
+      }
+      
       setFormData(prev => ({
         ...prev,
         image: file
       }));
+      setError(null);
       
       // Create preview
       const reader = new FileReader();
@@ -401,6 +416,31 @@ const ProductForm = ({ mode = 'add' }) => {
     setLoading(true);
     setError(null);
     setSuccess(null);
+
+    // Client-side validation
+    if (!formData.name?.trim()) {
+      setError('Nama produk harus diisi');
+      setLoading(false);
+      return;
+    }
+    
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      setError('Harga produk harus lebih dari 0');
+      setLoading(false);
+      return;
+    }
+    
+    if (!formData.stock || parseInt(formData.stock) < 0) {
+      setError('Stok tidak boleh negatif');
+      setLoading(false);
+      return;
+    }
+    
+    if (!formData.category_id) {
+      setError('Kategori harus dipilih');
+      setLoading(false);
+      return;
+    }
 
     try {
       const submitData = new FormData();

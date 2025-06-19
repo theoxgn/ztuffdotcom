@@ -37,6 +37,10 @@ export const CartProvider = ({ children }) => {
 
   // Add item to cart
   const addToCart = async (product_id, quantity, variation_id = null) => {
+    if (loading) {
+      return { success: false, message: 'Operasi cart sedang berjalan, tunggu sebentar' };
+    }
+    
     try {
       setLoading(true);
       setError(null);
@@ -61,6 +65,10 @@ export const CartProvider = ({ children }) => {
 
   // Update cart item quantity
   const updateCartItem = async (cartId, quantity) => {
+    if (loading) {
+      return { success: false, message: 'Operasi cart sedang berjalan, tunggu sebentar' };
+    }
+    
     try {
       setLoading(true);
       setError(null);
@@ -127,8 +135,14 @@ export const CartProvider = ({ children }) => {
   // Calculate subtotal
   const getSubtotal = () => {
     return cartItems.reduce((total, item) => {
-      const price = item.variation ? (item.variation.price || item.product.price) : item.product.price;
-      return total + (price * item.quantity);
+      if (!item || !item.product) return total;
+      
+      const price = item.variation ? 
+        (item.variation.price || item.product.price || 0) : 
+        (item.product.price || 0);
+      
+      const quantity = item.quantity || 0;
+      return total + (price * quantity);
     }, 0);
   };
 

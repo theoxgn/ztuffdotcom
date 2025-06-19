@@ -34,7 +34,8 @@ const Products = () => {
         
         // Get page from URL or default to 1
         const page = searchParams.get('page') || 1;
-        setCurrentPage(parseInt(page));
+        const pageNum = parseInt(page, 10);
+        setCurrentPage(!isNaN(pageNum) && pageNum > 0 ? pageNum : 1);
         
         // Sync state with URL parameters
         const urlSearchTerm = searchParams.get('search') || '';

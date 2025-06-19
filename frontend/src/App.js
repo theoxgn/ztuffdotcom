@@ -29,21 +29,26 @@ import AdminOrders from './pages/admin/Orders';
 
 // Context Provider
 import { AuthProvider } from './contexts/AuthContext';
+import AuthContext from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { WishlistProvider } from './contexts/WishlistContext';
 import { ToastProvider } from './components';
 
 // Protected Route Component
-const ProtectedRoute = ({ children }) => {
-  const isAuthenticated = localStorage.getItem('token');
-  return isAuthenticated ? children : <Navigate to="/login" />;
-};
+const ProtectedRoute = ({ children, adminOnly = false }) => {
+  const { currentUser, loading } = React.useContext(AuthContext);
 
-// Admin Route Component
-const AdminRoute = ({ children }) => {
-  const isAuthenticated = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  return isAuthenticated && user.role === 'admin' ? children : <Navigate to="/" />;
+  if (loading) return <div>Loading...</div>;
+  
+  if (!currentUser) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (adminOnly && currentUser.role !== 'admin') {
+    return <Navigate to="/" />;
+  }
+  
+  return children;
 };
 
 function App() {
@@ -95,9 +100,9 @@ function App() {
             {/* Admin Routes */}
             <Route path="/admin/*" element={
               <MainLayout>
-                <AdminRoute>
+                <ProtectedRoute adminOnly={true}>
                   <AdminDashboard />
-                </AdminRoute>
+                </ProtectedRoute>
               </MainLayout>
             } />
             

@@ -15,7 +15,13 @@ const Cart = () => {
 
   // Group cart items by category
   useEffect(() => {
+    if (!Array.isArray(cartItems)) {
+      setGroupedItems({});
+      return;
+    }
+    
     const grouped = cartItems.reduce((acc, item) => {
+      if (!item || !item.product) return acc;
       const categoryId = item.product?.category_id || 'uncategorized';
       if (!acc[categoryId]) {
         acc[categoryId] = [];
@@ -45,9 +51,10 @@ const Cart = () => {
 
   // Get price for an item
   const getItemPrice = (item) => {
+    if (!item || !item.product) return 0;
     return item.variation ? 
-      (item.variation.price || item.product.price) : 
-      item.product.price;
+      (item.variation?.price || item.product?.price || 0) : 
+      (item.product?.price || 0);
   };
 
   // Calculate subtotal for a category
