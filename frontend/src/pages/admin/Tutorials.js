@@ -164,7 +164,7 @@ const Tutorials = () => {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Pengelolaan Tutorial</h2>
-        <Button variant="primary" onClick={handleAddTutorial}>
+        <Button variant="primary" size="sm" className="px-3 py-2 fw-semibold" onClick={handleAddTutorial}>
           <FontAwesomeIcon icon={faPlus} className="me-2" />
           Tambah Tutorial
         </Button>
@@ -219,7 +219,8 @@ const Tutorials = () => {
                     <Button 
                       variant="outline-info" 
                       size="sm" 
-                      className="me-1"
+                      className="me-1 px-2 py-1"
+                      style={{ width: '32px', height: '32px' }}
                       href={`/tutorials/${tutorial.id}`} 
                       target="_blank"
                     >
@@ -228,7 +229,8 @@ const Tutorials = () => {
                     <Button 
                       variant="outline-primary" 
                       size="sm" 
-                      className="me-1"
+                      className="me-1 px-2 py-1"
+                      style={{ width: '32px', height: '32px' }}
                       onClick={() => handleEditTutorial(tutorial)}
                     >
                       <FontAwesomeIcon icon={faEdit} />
@@ -236,6 +238,8 @@ const Tutorials = () => {
                     <Button 
                       variant="outline-danger" 
                       size="sm"
+                      className="px-2 py-1"
+                      style={{ width: '32px', height: '32px' }}
                       onClick={() => handleDeleteTutorial(tutorial.id)}
                     >
                       <FontAwesomeIcon icon={faTrash} />
@@ -331,10 +335,10 @@ const Tutorials = () => {
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
+            <Button variant="secondary" size="sm" className="px-3 py-2 fw-semibold" onClick={() => setShowModal(false)}>
               Batal
             </Button>
-            <Button variant="primary" type="submit">
+            <Button variant="primary" size="sm" className="px-3 py-2 fw-semibold" type="submit">
               {modalMode === 'add' ? 'Tambah' : 'Simpan'}
             </Button>
           </Modal.Footer>

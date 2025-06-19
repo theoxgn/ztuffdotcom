@@ -185,6 +185,7 @@ const OrderList = () => {
                     <Button 
                       variant="outline-primary" 
                       size="sm"
+                      className="px-2 py-1"
                       onClick={() => navigate(`/admin/orders/detail/${order.id}`)}
                     >
                       <FontAwesomeIcon icon={faEye} className="me-1" /> Detail
@@ -669,7 +670,7 @@ const OrderDetail = () => {
   if (error && !order) {
     return (
       <div>
-        <Button variant="outline-secondary" onClick={() => navigate('/admin/orders')} className="mb-3">
+        <Button variant="outline-secondary" size="sm" className="mb-3 px-3 py-2 fw-semibold" onClick={() => navigate('/admin/orders')}>
           <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
           Kembali
         </Button>
@@ -688,6 +689,8 @@ const OrderDetail = () => {
         <div className="d-flex gap-2">
           <Button 
             variant="outline-primary"
+            size="sm"
+            className="px-2 py-1 fw-semibold"
             onClick={() => setShowNoteModal(true)}
           >
             <FontAwesomeIcon icon={faComments} className="me-2" />
@@ -695,6 +698,8 @@ const OrderDetail = () => {
           </Button>
           <Button 
             variant="outline-secondary" 
+            size="sm"
+            className="px-2 py-1 fw-semibold"
             onClick={() => navigate('/admin/orders')}
           >
             <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
@@ -718,6 +723,7 @@ const OrderDetail = () => {
                       <Button 
                         variant="outline-primary" 
                         size="sm"
+                        className="px-3 py-2 fw-semibold"
                         onClick={() => setShowStatusModal(true)}
                       >
                         <FontAwesomeIcon icon={faEdit} className="me-1" />
@@ -931,11 +937,11 @@ const OrderDetail = () => {
             </Card.Header>
             <Card.Body>
               <div className="d-grid gap-2">
-                <Button variant="outline-primary" size="sm" onClick={handlePrintInvoice}>
+                <Button variant="outline-primary" size="sm" className="px-3 py-2 fw-semibold" onClick={handlePrintInvoice}>
                   <FontAwesomeIcon icon={faPrint} className="me-2" />
                   Cetak Invoice
                 </Button>
-                <Button variant="outline-success" size="sm" onClick={handleExportPDF}>
+                <Button variant="outline-success" size="sm" className="px-3 py-2 fw-semibold" onClick={handleExportPDF}>
                   <FontAwesomeIcon icon={faFileInvoice} className="me-2" />
                   Ekspor PDF
                 </Button>
@@ -943,6 +949,7 @@ const OrderDetail = () => {
                   <Button 
                     variant="outline-info" 
                     size="sm"
+                    className="px-3 py-2 fw-semibold"
                     onClick={() => {
                       setNewStatus('shipped');
                       setShowStatusModal(true);
@@ -992,11 +999,13 @@ const OrderDetail = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowStatusModal(false)}>
+          <Button variant="secondary" size="sm" className="px-3 py-2 fw-semibold" onClick={() => setShowStatusModal(false)}>
             Batal
           </Button>
           <Button 
             variant="primary" 
+            size="sm"
+            className="px-3 py-2 fw-semibold"
             onClick={handleStatusUpdate}
             disabled={!newStatus || updating}
           >
@@ -1035,11 +1044,13 @@ const OrderDetail = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowNoteModal(false)}>
+          <Button variant="secondary" size="sm" className="px-3 py-2 fw-semibold" onClick={() => setShowNoteModal(false)}>
             Batal
           </Button>
           <Button 
             variant="primary" 
+            size="sm"
+            className="px-3 py-2 fw-semibold"
             onClick={handleAddNote}
             disabled={!orderNote.trim() || updating}
           >

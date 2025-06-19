@@ -68,7 +68,7 @@ const Home = () => {
           <Carousel.Caption>
             <h1>Ztuff.com</h1>
             <p className="lead">Trusted Online Marketplace with Quality Products</p>
-            <Button as={Link} to="/products" variant="light" size="lg" className="rounded-pill px-4 mt-3">
+            <Button as={Link} to="/products" variant="light" size="lg" className="rounded-pill px-5 py-3 mt-3 fw-semibold">
               Shop Now
             </Button>
           </Carousel.Caption>
@@ -84,7 +84,7 @@ const Home = () => {
           <Carousel.Caption>
             <h1>Fast & Reliable Shipping</h1>
             <p className="lead">We handle everything from packaging to delivery</p>
-            <Button as={Link} to="/tutorial" variant="light" size="lg" className="rounded-pill px-4 mt-3">
+            <Button as={Link} to="/tutorial" variant="light" size="lg" className="rounded-pill px-5 py-3 mt-3 fw-semibold">
               Learn More
             </Button>
           </Carousel.Caption>
@@ -123,7 +123,8 @@ const Home = () => {
                         as={Link} 
                         to={`/products?category=${category.id}`} 
                         variant="outline-primary" 
-                        className="w-100 rounded-pill"
+                        size="sm"
+                        className="w-100 rounded-pill py-2 fw-semibold"
                       >
                         Browse Products
                       </Button>
@@ -168,17 +169,19 @@ const Home = () => {
                           as={Link}
                           to={`/products/${product.id}`}
                           variant="light" 
-                          className="rounded-circle p-2 mx-1 shadow-sm"
-                          style={{ width: '40px', height: '40px' }}
+                          size="sm"
+                          className="rounded-circle d-flex align-items-center justify-content-center mx-1 shadow-sm"
+                          style={{ width: '36px', height: '36px', padding: '0' }}
                         >
-                          <FontAwesomeIcon icon={faEye} />
+                          <FontAwesomeIcon icon={faEye} size="sm" />
                         </Button>
                         <Button 
                           variant="primary" 
-                          className="rounded-circle p-2 mx-1 shadow-sm"
-                          style={{ width: '40px', height: '40px' }}
+                          size="sm"
+                          className="rounded-circle d-flex align-items-center justify-content-center mx-1 shadow-sm"
+                          style={{ width: '36px', height: '36px', padding: '0' }}
                         >
-                          <FontAwesomeIcon icon={faShoppingCart} />
+                          <FontAwesomeIcon icon={faShoppingCart} size="sm" />
                         </Button>
                       </div>
                     </div>
@@ -195,7 +198,8 @@ const Home = () => {
                         as={Link} 
                         to={`/products/${product.id}`} 
                         variant="outline-primary" 
-                        className="w-100 rounded-pill mt-2"
+                        size="sm"
+                        className="w-100 rounded-pill mt-2 py-2 fw-semibold"
                       >
                         View Details
                       </Button>
@@ -226,7 +230,7 @@ const Home = () => {
                     <div className="bg-white bg-opacity-75 p-4 rounded">
                       <h2>Special Offer</h2>
                       <p className="lead">Get 20% off on your first order</p>
-                      <Button variant="primary" className="rounded-pill px-4">
+                      <Button variant="primary" size="lg" className="rounded-pill px-5 py-3 fw-semibold">
                         Shop Now
                       </Button>
                     </div>
@@ -272,7 +276,8 @@ const Home = () => {
                         as={Link} 
                         to={`/tutorial/${tutorial.id}`} 
                         variant="outline-primary"
-                        className="rounded-pill"
+                        size="sm"
+                        className="rounded-pill px-4 py-2 fw-semibold"
                       >
                         Read More
                       </Button>

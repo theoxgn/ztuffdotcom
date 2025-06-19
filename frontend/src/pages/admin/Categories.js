@@ -111,7 +111,7 @@ const Categories = () => {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Pengelolaan Kategori</h2>
-        <Button variant="primary" onClick={handleAddCategory}>
+        <Button variant="primary" size="sm" className="px-3 py-2 fw-semibold" onClick={handleAddCategory}>
           <FontAwesomeIcon icon={faPlus} className="me-2" />
           Tambah Kategori
         </Button>
@@ -148,7 +148,8 @@ const Categories = () => {
                     <Button 
                       variant="outline-primary" 
                       size="sm" 
-                      className="me-2"
+                      className="me-2 px-2 py-1"
+                      style={{ width: '32px', height: '32px' }}
                       onClick={() => handleEditCategory(category)}
                     >
                       <FontAwesomeIcon icon={faEdit} />
@@ -156,6 +157,8 @@ const Categories = () => {
                     <Button 
                       variant="outline-danger" 
                       size="sm"
+                      className="px-2 py-1"
+                      style={{ width: '32px', height: '32px' }}
                       onClick={() => handleDeleteCategory(category.id)}
                     >
                       <FontAwesomeIcon icon={faTrash} />
@@ -217,10 +220,10 @@ const Categories = () => {
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
+            <Button variant="secondary" size="sm" className="px-3 py-2 fw-semibold" onClick={() => setShowModal(false)}>
               Batal
             </Button>
-            <Button variant="primary" type="submit">
+            <Button variant="primary" size="sm" className="px-3 py-2 fw-semibold" type="submit">
               {modalMode === 'add' ? 'Tambah' : 'Simpan'}
             </Button>
           </Modal.Footer>

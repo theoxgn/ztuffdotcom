@@ -162,6 +162,7 @@ const Checkout = () => {
                     to={`/user/orders`} 
                     variant="primary" 
                     size="lg"
+                    className="px-5 py-3 fw-bold rounded-pill"
                   >
                     Lihat Pesanan Saya
                   </Button>
@@ -169,6 +170,8 @@ const Checkout = () => {
                     as={Link} 
                     to="/" 
                     variant="outline-primary"
+                    size="sm"
+                    className="px-4 py-2 fw-semibold rounded-pill"
                   >
                     Kembali ke Beranda
                   </Button>
@@ -339,6 +342,7 @@ const Checkout = () => {
                           type="submit" 
                           variant="primary" 
                           size="lg"
+                          className="px-5 py-3 fw-bold rounded-pill"
                           disabled={isSubmitting || loading}
                         >
                           {isSubmitting || loading ? 'Memproses...' : 'Buat Pesanan'}

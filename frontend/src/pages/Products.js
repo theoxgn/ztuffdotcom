@@ -206,7 +206,7 @@ const Products = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <Button variant="primary" type="submit">
+              <Button variant="primary" type="submit" className="px-3">
                 <FontAwesomeIcon icon={faSearch} />
               </Button>
             </InputGroup>
@@ -215,6 +215,8 @@ const Products = () => {
         <Col md={6} className="d-flex justify-content-md-end">
           <Button 
             variant="outline-secondary" 
+            size="sm"
+            className="px-3 py-2 fw-semibold"
             onClick={() => setShowFilters(!showFilters)}
           >
             <FontAwesomeIcon icon={faFilter} className="me-1" />
@@ -286,13 +288,16 @@ const Products = () => {
             <div className="d-flex justify-content-end mt-2">
               <Button 
                 variant="outline-secondary" 
-                className="me-2"
+                size="sm"
+                className="me-2 px-3 py-2 fw-semibold"
                 onClick={resetFilters}
               >
                 Reset
               </Button>
               <Button 
                 variant="primary"
+                size="sm"
+                className="px-3 py-2 fw-semibold"
                 onClick={applyFilters}
               >
                 Terapkan Filter
@@ -322,8 +327,9 @@ const Products = () => {
           {(searchTerm || selectedCategory || priceMin || priceMax) && (
             <Button 
               variant="outline-primary" 
+              size="sm"
               onClick={resetFilters}
-              className="mt-2"
+              className="mt-2 px-4 py-2 fw-semibold rounded-pill"
             >
               Reset Filter
             </Button>
@@ -360,7 +366,8 @@ const Products = () => {
                         as={Link} 
                         to={`/products/${product.id}`} 
                         variant="primary" 
-                        className="w-100"
+                        size="sm"
+                        className="w-100 py-2 fw-semibold rounded-pill"
                       >
                         Lihat Detail
                       </Button>

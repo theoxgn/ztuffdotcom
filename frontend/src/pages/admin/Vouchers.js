@@ -170,7 +170,7 @@ const Vouchers = () => {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Pengelolaan Voucher</h2>
-        <Button variant="primary" onClick={handleAddVoucher}>
+        <Button variant="primary" size="sm" className="px-3 py-2 fw-semibold" onClick={handleAddVoucher}>
           <FontAwesomeIcon icon={faPlus} className="me-2" />
           Tambah Voucher
         </Button>
@@ -224,7 +224,8 @@ const Vouchers = () => {
                     <Button 
                       variant="outline-primary" 
                       size="sm" 
-                      className="me-2"
+                      className="me-2 px-2 py-1"
+                      style={{ width: '32px', height: '32px' }}
                       onClick={() => handleEditVoucher(voucher)}
                     >
                       <FontAwesomeIcon icon={faEdit} />
@@ -232,6 +233,8 @@ const Vouchers = () => {
                     <Button 
                       variant="outline-danger" 
                       size="sm"
+                      className="px-2 py-1"
+                      style={{ width: '32px', height: '32px' }}
                       onClick={() => handleDeleteVoucher(voucher.id)}
                     >
                       <FontAwesomeIcon icon={faTrash} />
@@ -400,10 +403,10 @@ const Vouchers = () => {
             </Row>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
+            <Button variant="secondary" size="sm" className="px-3 py-2 fw-semibold" onClick={() => setShowModal(false)}>
               Batal
             </Button>
-            <Button variant="primary" type="submit">
+            <Button variant="primary" size="sm" className="px-3 py-2 fw-semibold" type="submit">
               {modalMode === 'add' ? 'Tambah' : 'Simpan'}
             </Button>
           </Modal.Footer>

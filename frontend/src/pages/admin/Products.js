@@ -112,7 +112,7 @@ const ProductList = () => {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Pengelolaan Produk</h2>
-        <Button variant="primary" onClick={() => navigate('/admin/products/add')}>
+        <Button variant="primary" size="sm" className="px-3 py-2 fw-semibold" onClick={() => navigate('/admin/products/add')}>
           <FontAwesomeIcon icon={faPlus} className="me-2" />
           Tambah Produk
         </Button>
@@ -196,7 +196,8 @@ const ProductList = () => {
                     <Button 
                       variant="outline-primary" 
                       size="sm" 
-                      className="me-2"
+                      className="me-2 px-2 py-1"
+                      style={{ width: '32px', height: '32px' }}
                       onClick={() => navigate(`/admin/products/edit/${product.id}`)}
                     >
                       <FontAwesomeIcon icon={faEdit} />
@@ -204,6 +205,8 @@ const ProductList = () => {
                     <Button 
                       variant="outline-danger" 
                       size="sm"
+                      className="px-2 py-1"
+                      style={{ width: '32px', height: '32px' }}
                       onClick={() => handleDeleteProduct(product)}
                     >
                       <FontAwesomeIcon icon={faTrash} />
@@ -451,7 +454,7 @@ const ProductForm = ({ mode = 'add' }) => {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>{mode === 'add' ? 'Tambah Produk Baru' : 'Edit Produk'}</h2>
-        <Button variant="outline-secondary" onClick={() => navigate('/admin/products')}>
+        <Button variant="outline-secondary" size="sm" className="px-3 py-2 fw-semibold" onClick={() => navigate('/admin/products')}>
           <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
           Kembali
         </Button>
@@ -586,6 +589,7 @@ const ProductForm = ({ mode = 'add' }) => {
                       <Button 
                         variant="outline-primary" 
                         size="sm"
+                        className="px-3 py-2 fw-semibold"
                         onClick={() => setShowVariationModal(true)}
                       >
                         <FontAwesomeIcon icon={faPlus} className="me-1" />
@@ -667,7 +671,9 @@ const ProductForm = ({ mode = 'add' }) => {
             <div className="d-flex justify-content-end gap-2">
               <Button 
                 variant="outline-secondary" 
+                size="sm"
                 type="button"
+                className="px-3 py-2 fw-semibold"
                 onClick={() => navigate('/admin/products')}
                 disabled={loading}
               >
@@ -675,7 +681,9 @@ const ProductForm = ({ mode = 'add' }) => {
               </Button>
               <Button 
                 variant="primary" 
+                size="sm"
                 type="submit"
+                className="px-4 py-2 fw-semibold"
                 disabled={loading}
               >
                 {loading ? (
@@ -743,7 +751,9 @@ const ProductForm = ({ mode = 'add' }) => {
                   {newVariation.values.length > 1 && (
                     <Button 
                       variant="outline-danger" 
-                      className="ms-2"
+                      size="sm"
+                      className="ms-2 px-2 py-1"
+                      style={{ width: '32px', height: '32px' }}
                       onClick={() => removeVariationValue(index)}
                     >
                       <FontAwesomeIcon icon={faTrash} />
@@ -754,6 +764,7 @@ const ProductForm = ({ mode = 'add' }) => {
               <Button 
                 variant="outline-primary" 
                 size="sm"
+                className="px-3 py-2 fw-semibold"
                 onClick={addVariationValue}
               >
                 <FontAwesomeIcon icon={faPlus} className="me-1" />
@@ -763,10 +774,10 @@ const ProductForm = ({ mode = 'add' }) => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowVariationModal(false)}>
+          <Button variant="secondary" size="sm" className="px-3 py-2 fw-semibold" onClick={() => setShowVariationModal(false)}>
             Batal
           </Button>
-          <Button variant="primary" onClick={addVariation}>
+          <Button variant="primary" size="sm" className="px-3 py-2 fw-semibold" onClick={addVariation}>
             Tambah Variasi
           </Button>
         </Modal.Footer>

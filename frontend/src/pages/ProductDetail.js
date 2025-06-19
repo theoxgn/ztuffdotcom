@@ -156,7 +156,7 @@ const ProductDetail = () => {
       <Alert variant="danger">
         <Alert.Heading>An Error Occurred</Alert.Heading>
         <p>{error || 'Product not found.'}</p>
-        <Button as={Link} to="/products" variant="outline-danger">
+        <Button as={Link} to="/products" variant="outline-danger" size="sm" className="px-3 py-2 fw-semibold rounded-pill">
           <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
           Back to Products
         </Button>
@@ -226,11 +226,11 @@ const ProductDetail = () => {
               <div className="d-flex justify-content-between align-items-start mb-2">
                 <Badge bg="primary" className="rounded-pill px-3 py-2">{product.category?.name || 'Product'}</Badge>
                 <div>
-                  <Button variant="light" className="rounded-circle me-2 p-2" title="Add to Wishlist">
-                    <FontAwesomeIcon icon={faHeart} />
+                  <Button variant="light" size="sm" className="rounded-circle me-2" style={{ width: '36px', height: '36px', padding: '0' }} title="Add to Wishlist">
+                    <FontAwesomeIcon icon={faHeart} size="sm" />
                   </Button>
-                  <Button variant="light" className="rounded-circle p-2" title="Share">
-                    <FontAwesomeIcon icon={faShare} />
+                  <Button variant="light" size="sm" className="rounded-circle" style={{ width: '36px', height: '36px', padding: '0' }} title="Share">
+                    <FontAwesomeIcon icon={faShare} size="sm" />
                   </Button>
                 </div>
               </div>
@@ -263,7 +263,7 @@ const ProductDetail = () => {
                           key={color} 
                           variant={selectedColor === color ? 'primary' : 'outline-secondary'}
                           size="sm"
-                          className="me-2 mb-2"
+                          className="me-2 mb-2 px-3 py-2 fw-semibold"
                           onClick={() => handleColorChange({ target: { value: color } })}
                           style={{ 
                             minWidth: '80px',
@@ -306,7 +306,8 @@ const ProductDetail = () => {
                   <div className="d-flex align-items-center">
                     <Button 
                       variant="light" 
-                      className="border"
+                      size="sm"
+                      className="border px-3 py-2"
                       onClick={() => quantity > 1 && setQuantity(quantity - 1)}
                     >
                       -
@@ -322,7 +323,8 @@ const ProductDetail = () => {
                     />
                     <Button 
                       variant="light"
-                      className="border"
+                      size="sm"
+                      className="border px-3 py-2"
                       onClick={() => quantity < (selectedVariation?.stock || product.stock) && setQuantity(quantity + 1)}
                     >
                       +
@@ -340,7 +342,7 @@ const ProductDetail = () => {
                   <Button 
                     variant="primary" 
                     size="lg"
-                    className="rounded-pill"
+                    className="rounded-pill px-5 py-3 fw-bold"
                     onClick={handleAddToCart}
                     disabled={
                       addingToCart || 

@@ -64,7 +64,7 @@ const Cart = () => {
         <Alert.Heading>Anda belum login</Alert.Heading>
         <p>Silakan login terlebih dahulu untuk melihat keranjang belanja Anda.</p>
         <div className="d-flex justify-content-end">
-          <Button variant="outline-info" as={Link} to="/login">
+          <Button variant="outline-info" as={Link} to="/login" size="sm" className="px-4 py-2 fw-semibold rounded-pill">
             Login Sekarang
           </Button>
         </div>
@@ -96,7 +96,7 @@ const Cart = () => {
         <FontAwesomeIcon icon={faShoppingCart} size="4x" className="text-muted mb-3" />
         <h3>Keranjang Belanja Kosong</h3>
         <p className="text-muted">Anda belum menambahkan produk apapun ke keranjang.</p>
-        <Button as={Link} to="/products" variant="primary" className="mt-3">
+        <Button as={Link} to="/products" variant="primary" size="lg" className="mt-3 px-5 py-3 fw-semibold rounded-pill">
           <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
           Belanja Sekarang
         </Button>
@@ -169,8 +169,10 @@ const Cart = () => {
                           <Button 
                             variant="danger" 
                             size="sm"
+                            className="px-2 py-1"
                             onClick={() => handleRemoveItem(item.id)}
                             disabled={processingItem === item.id}
+                            style={{ width: '32px', height: '32px' }}
                           >
                             <FontAwesomeIcon icon={faTrash} />
                           </Button>
@@ -191,6 +193,8 @@ const Cart = () => {
                   as={Link} 
                   to={`/checkout?category=${categoryId}`} 
                   variant="success"
+                  size="sm"
+                  className="px-4 py-2 fw-semibold rounded-pill"
                 >
                   Checkout
                 </Button>
@@ -220,6 +224,7 @@ const Cart = () => {
                   to="/checkout" 
                   variant="primary" 
                   size="lg"
+                  className="px-5 py-3 fw-bold rounded-pill"
                 >
                   Checkout Semua
                 </Button>
