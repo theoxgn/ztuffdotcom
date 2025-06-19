@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Card, Table, Badge, Button, Spinner, Alert, Tabs, Tab, Modal, Form } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faFileUpload, faCheck, faCreditCard } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faCreditCard } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import AuthContext from '../../contexts/AuthContext';
 import { PaymentInfo } from '../../components';
@@ -13,12 +13,7 @@ const OrderHistory = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [paymentFile, setPaymentFile] = useState(null);
-  const [uploadLoading, setUploadLoading] = useState(false);
-  const [uploadError, setUploadError] = useState(null);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -60,47 +55,6 @@ const OrderHistory = () => {
     return false;
   });
 
-  // Handle payment upload
-  const handleUploadPayment = async (e) => {
-    e.preventDefault();
-    
-    if (!paymentFile) {
-      setUploadError('Silakan pilih file bukti pembayaran.');
-      return;
-    }
-    
-    try {
-      setUploadLoading(true);
-      setUploadError(null);
-      setUploadSuccess(false);
-      
-      const formData = new FormData();
-      formData.append('payment_proof', paymentFile);
-      
-      await axios.post(`/api/orders/${selectedOrder.id}/payment`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      setUploadSuccess(true);
-      
-      // Update orders list
-      const response = await axios.get('/api/orders');
-      setOrders(response.data.data.orders || []);
-      
-      // Close modal after 2 seconds
-      setTimeout(() => {
-        setShowPaymentModal(false);
-        setPaymentFile(null);
-      }, 2000);
-    } catch (error) {
-      console.error('Error uploading payment:', error);
-      setUploadError('Gagal mengunggah bukti pembayaran. Silakan coba lagi.');
-    } finally {
-      setUploadLoading(false);
-    }
-  };
 
   // Handle view order details
   const handleViewDetails = async (order) => {
@@ -246,19 +200,6 @@ const OrderHistory = () => {
                       >
                         <FontAwesomeIcon icon={faCreditCard} /> Pembayaran
                       </Button>
-                      
-                      {order.status === 'pending' && (
-                        <Button
-                          variant="outline-success"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setShowPaymentModal(true);
-                          }}
-                        >
-                          <FontAwesomeIcon icon={faFileUpload} /> Upload Bukti
-                        </Button>
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -267,61 +208,6 @@ const OrderHistory = () => {
           </Card.Body>
         </Card>
       )}
-      
-      {/* Payment Upload Modal */}
-      <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Upload Bukti Pembayaran</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {uploadSuccess ? (
-            <Alert variant="success">
-              <FontAwesomeIcon icon={faCheck} className="me-2" />
-              Bukti pembayaran berhasil diunggah. Pesanan Anda sedang diproses.
-            </Alert>
-          ) : (
-            <Form onSubmit={handleUploadPayment}>
-              {uploadError && (
-                <Alert variant="danger" className="mb-3">
-                  {uploadError}
-                </Alert>
-              )}
-              
-              <div className="mb-3">
-                <p>
-                  <strong>ID Pesanan:</strong> {selectedOrder?.order_number}
-                </p>
-                <p>
-                  <strong>Total Pembayaran:</strong> Rp {selectedOrder?.total ? parseFloat(selectedOrder.total).toLocaleString('id-ID') : '0'}
-                </p>
-              </div>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Bukti Pembayaran</Form.Label>
-                <Form.Control
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setPaymentFile(e.target.files[0])}
-                  required
-                />
-                <Form.Text className="text-muted">
-                  Format yang diperbolehkan: JPG, JPEG, PNG. Maksimal 5MB.
-                </Form.Text>
-              </Form.Group>
-              
-              <div className="d-grid">
-                <Button 
-                  type="submit" 
-                  variant="primary"
-                  disabled={uploadLoading || !paymentFile}
-                >
-                  {uploadLoading ? 'Mengunggah...' : 'Upload Bukti Pembayaran'}
-                </Button>
-              </div>
-            </Form>
-          )}
-        </Modal.Body>
-      </Modal>
       
       {/* Order Details Modal */}
       <Modal 
@@ -411,22 +297,6 @@ const OrderHistory = () => {
                   </tfoot>
                 </Table>
               </div>
-              
-              {orderDetails.payment_proof && (
-                <div className="mb-4">
-                  <h5>Bukti Pembayaran</h5>
-                  <hr />
-                  <div className="text-center">
-                    <img 
-                      src={orderDetails.payment_proof ? `/uploads/${orderDetails.payment_proof}` : '/default.webp'} 
-                      alt="Bukti Pembayaran" 
-                      className="img-fluid" 
-                      style={{ maxHeight: '300px' }}
-                      onError={(e) => { e.target.src = '/default.webp'; }}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
             <Alert variant="danger">

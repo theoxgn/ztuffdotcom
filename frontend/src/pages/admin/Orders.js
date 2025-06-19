@@ -877,30 +877,16 @@ const OrderDetail = () => {
                 </Card.Header>
                 <Card.Body>
                   <Row>
-                    <Col md={6}>
-                      <p><strong>Metode Pembayaran:</strong> {order?.paymentMethod?.name || 'Belum dipilih'}</p>
+                    <Col md={12}>
+                      <p><strong>Metode Pembayaran:</strong> {order?.payment_type ? order.payment_type.replace('_', ' ').toUpperCase() : (order?.paymentMethod?.name || 'Belum dipilih')}</p>
                       <p><strong>Status Pembayaran:</strong> {getStatusBadge(order?.status || 'pending')}</p>
                       <p><strong>Total Pembayaran:</strong> {formatCurrency(order?.total)}</p>
-                    </Col>
-                    <Col md={6}>
-                      <div>
-                        <p><strong>Bukti Pembayaran:</strong></p>
-                        {order?.payment_proof ? (
-                          <div>
-                            <img 
-                              src={`${process.env.REACT_APP_API_URL}/uploads/${order.payment_proof}`} 
-                              alt="Bukti Pembayaran" 
-                              className="img-fluid rounded"
-                              style={{ maxHeight: '200px' }}
-                              onError={(e) => { 
-                                e.target.src = '/default.webp'; 
-                              }}
-                            />
-                          </div>
-                        ) : (
-                          <p className="text-muted">Belum ada bukti pembayaran</p>
-                        )}
-                      </div>
+                      {order?.midtrans_order_id && (
+                        <p><strong>Midtrans Order ID:</strong> {order.midtrans_order_id}</p>
+                      )}
+                      {order?.midtrans_transaction_status && (
+                        <p><strong>Status Transaksi:</strong> <Badge bg="info">{order.midtrans_transaction_status}</Badge></p>
+                      )}
                     </Col>
                   </Row>
                 </Card.Body>
@@ -917,15 +903,15 @@ const OrderDetail = () => {
                     <Col md={6}>
                       <h6>Alamat Pengiriman:</h6>
                       <p>
-                        {order?.shipping_address?.recipient_name}<br />
-                        {order?.shipping_address?.phone}<br />
-                        {order?.shipping_address?.address}<br />
-                        {order?.shipping_address?.city}, {order?.shipping_address?.postal_code}
+                        {order?.shipping_address}<br />
+                        {order?.shipping_city}, {order?.shipping_province}<br />
+                        {order?.shipping_postal_code}
                       </p>
                     </Col>
                     <Col md={6}>
-                      <p><strong>Kurir:</strong> {order?.shipping_courier || 'Belum dipilih'}</p>
-                      <p><strong>Layanan:</strong> {order?.shipping_service || 'Belum dipilih'}</p>
+                      <p><strong>Kurir:</strong> {order?.courier || order?.courier_name || 'Belum dipilih'}</p>
+                      <p><strong>Layanan:</strong> {order?.courier_service || 'Belum dipilih'}</p>
+                      <p><strong>Estimasi Pengiriman:</strong> {order?.shipping_etd || 'Belum tersedia'}</p>
                       <p><strong>Ongkos Kirim:</strong> {formatCurrency(order?.shipping_cost)}</p>
                       {order?.tracking_number && (
                         <p><strong>No. Resi:</strong> {order.tracking_number}</p>
