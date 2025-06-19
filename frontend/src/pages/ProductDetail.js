@@ -34,6 +34,8 @@ const ProductDetail = () => {
   const [cartMessage, setCartMessage] = useState(null);
   const [activeImage, setActiveImage] = useState(0);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
 
   // Fetch product data
   useEffect(() => {
@@ -65,6 +67,35 @@ const ProductDetail = () => {
 
     fetchProduct();
   }, [id]);
+
+  // Fetch related products
+  useEffect(() => {
+    const fetchRelatedProducts = async () => {
+      if (!product) return;
+      
+      try {
+        setRelatedLoading(true);
+        
+        // Fetch products from the same category
+        const response = await axios.get(`/api/products?category=${product.category?.id}&limit=8`);
+        const products = response.data.data.products || [];
+        
+        // Filter out current product and limit to 4 products
+        const filtered = products
+          .filter(p => p.id !== product.id)
+          .slice(0, 4);
+        
+        setRelatedProducts(filtered);
+      } catch (error) {
+        console.error('Error fetching related products:', error);
+        setRelatedProducts([]);
+      } finally {
+        setRelatedLoading(false);
+      }
+    };
+
+    fetchRelatedProducts();
+  }, [product]);
 
   // Handle size change
   const handleSizeChange = (e) => {
@@ -503,9 +534,67 @@ const ProductDetail = () => {
         
         <div className="related-products">
           <h3 className="mb-4">You May Also Like</h3>
-          <div className="text-center text-muted">
-            <p>Related products will appear here</p>
-          </div>
+          {relatedLoading ? (
+            <div className="text-center">
+              <Spinner animation="border" variant="primary" />
+              <p className="mt-2">Loading related products...</p>
+            </div>
+          ) : relatedProducts.length > 0 ? (
+            <Row className="g-4">
+              {relatedProducts.map(relatedProduct => (
+                <Col md={6} lg={3} key={relatedProduct.id}>
+                  <Card className="h-100 shadow-sm border-0 product-card">
+                    <div className="position-relative overflow-hidden">
+                      <Card.Img 
+                        variant="top" 
+                        src={relatedProduct.image || '/default.webp'}
+                        alt={relatedProduct.name}
+                        style={{ height: '200px', objectFit: 'cover' }}
+                        onError={(e) => { e.target.src = '/default.webp'; }}
+                      />
+                      <div className="position-absolute top-0 end-0 m-2">
+                        <Badge bg="primary" className="rounded-pill">
+                          {relatedProduct.category?.name || 'Product'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <Card.Body className="d-flex flex-column">
+                      <Card.Title className="h6 mb-2" style={{ minHeight: '48px' }}>
+                        {relatedProduct.name}
+                      </Card.Title>
+                      <Card.Text className="text-muted small mb-2" style={{ minHeight: '40px' }}>
+                        {relatedProduct.description?.replace(/<[^>]*>/g, '').substring(0, 80)}...
+                      </Card.Text>
+                      <div className="mt-auto">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                          <h5 className="text-primary fw-bold mb-0">
+                            Rp {parseFloat(relatedProduct.price).toLocaleString('id-ID')}
+                          </h5>
+                          <div className="d-flex align-items-center">
+                            <FontAwesomeIcon icon={faStar} className="text-warning me-1" size="sm" />
+                            <small className="text-muted">4.5</small>
+                          </div>
+                        </div>
+                        <Button 
+                          as={Link} 
+                          to={`/products/${relatedProduct.id}`}
+                          variant="primary" 
+                          size="sm" 
+                          className="w-100 rounded-pill fw-semibold"
+                        >
+                          View Details
+                        </Button>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          ) : (
+            <div className="text-center text-muted">
+              <p>No related products found.</p>
+            </div>
+          )}
         </div>
       </Container>
     </div>
