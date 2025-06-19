@@ -266,14 +266,7 @@ const MainLayout = ({ children }) => {
               </ul>
             </div>
             
-            <div className="col-lg-2 col-md-3 col-6 mb-4">
-              <h6 className="fw-bold mb-3">Legal</h6>
-              <ul className="list-unstyled">
-                <li className="mb-2"><Link to="/terms" className="text-decoration-none text-secondary">Terms of Service</Link></li>
-                <li className="mb-2"><Link to="/privacy" className="text-decoration-none text-secondary">Privacy Policy</Link></li>
-                <li className="mb-2"><Link to="/returns" className="text-decoration-none text-secondary">Returns Policy</Link></li>
-              </ul>
-            </div>
+            
           </div>
           
           <hr className="my-4" />

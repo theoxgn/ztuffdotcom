@@ -202,7 +202,7 @@ const Home = () => {
                       style={{ 
                         height: '200px',
                         background: product.image || (product.images && product.images[0])
-                          ? `url(${process.env.REACT_APP_API_URL}/uploads/${product.image || product.images[0].image}) center/cover no-repeat`
+                          ? `url(${process.env.REACT_APP_API_URL}${product.image || product.images[0].image}) center/cover no-repeat`
                           : '#f8f9fa'
                       }}
                     />

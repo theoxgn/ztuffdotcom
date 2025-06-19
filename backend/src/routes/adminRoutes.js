@@ -29,7 +29,9 @@ router.put('/vouchers/:id', authenticate, isAdmin, voucherController.updateVouch
 router.delete('/vouchers/:id', authenticate, isAdmin, voucherController.deleteVoucher);
 
 // Admin tutorials endpoints
+const tutorialController = require('../controllers/tutorialController');
 router.get('/tutorials', authenticate, isAdmin, adminController.getAllTutorials);
+router.delete('/tutorials/:id', authenticate, isAdmin, tutorialController.deleteTutorial);
 
 // Admin users endpoints
 router.get('/users', authenticate, isAdmin, adminController.getAllUsers);

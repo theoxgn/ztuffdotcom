@@ -251,7 +251,10 @@ const getAllTutorials = async (req, res) => {
         'createdAt',
         'updatedAt'
       ],
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
+      where: {
+        is_active: true
+      }
     });
     
     return successResponse(res, 200, 'Tutorial berhasil dimuat', { tutorials });
@@ -289,7 +292,24 @@ const getAllUsers = async (req, res) => {
  */
 const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.findAll({
+    const { page = 1, limit = 10, search, category } = req.query;
+    const offset = (page - 1) * limit;
+    
+    // Build where condition
+    const whereCondition = {};
+    
+    if (search) {
+      whereCondition.name = {
+        [require('sequelize').Op.iLike]: `%${search}%`
+      };
+    }
+    
+    if (category) {
+      whereCondition.category_id = category;
+    }
+    
+    const { count, rows: products } = await Product.findAndCountAll({
+      where: whereCondition,
       include: [
         {
           model: Category,
@@ -297,10 +317,20 @@ const getAllProducts = async (req, res) => {
           attributes: ['id', 'name']
         }
       ],
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
     });
     
-    return successResponse(res, 200, 'Produk berhasil dimuat', { products });
+    const totalPages = Math.ceil(count / limit);
+    
+    return successResponse(res, 200, 'Produk berhasil dimuat', { 
+      products,
+      totalItems: count,
+      totalPages,
+      currentPage: parseInt(page),
+      itemsPerPage: parseInt(limit)
+    });
   } catch (error) {
     console.error('Error in admin getAllProducts:', error);
     return errorResponse(res, 500, 'Terjadi kesalahan pada server');
@@ -423,6 +453,11 @@ const getProductDetail = async (req, res) => {
           model: Category,
           as: 'category',
           attributes: ['id', 'name']
+        },
+        {
+          model: require('../models').ProductVariation,
+          as: 'variations',
+          attributes: ['id', 'size', 'color', 'price', 'stock', 'is_active']
         }
       ]
     });
@@ -453,7 +488,50 @@ const createProduct = async (req, res) => {
       productData.image = `/uploads/products/${req.file.filename}`;
     }
 
+    // Parse variations if present
+    let variations = [];
+    if (productData.variations) {
+      try {
+        variations = JSON.parse(productData.variations);
+      } catch (e) {
+        console.error('Error parsing variations:', e);
+      }
+    }
+
+    // Remove variations from productData as it's not a Product field
+    delete productData.variations;
+
     const product = await Product.create(productData);
+    
+    // Create variations if provided
+    if (variations.length > 0) {
+      const { ProductVariation } = require('../models');
+      
+      for (const variation of variations) {
+        // Create variation entries for each value
+        for (const value of variation.values) {
+          const variationData = {
+            product_id: product.id,
+            size: null,
+            color: null,
+            price: productData.price, // Use base product price for now
+            stock: Math.floor(productData.stock / variations.length) || 0 // Distribute stock evenly
+          };
+          
+          // Set the appropriate field based on variation type
+          if (variation.type === 'size') {
+            variationData.size = value;
+          } else if (variation.type === 'color') {
+            variationData.color = value;
+          } else {
+            // For material, other types, store in size field as fallback
+            variationData.size = `${variation.name}: ${value}`;
+          }
+          
+          await ProductVariation.create(variationData);
+        }
+      }
+    }
     
     return successResponse(res, 201, 'Produk berhasil dibuat', { product });
   } catch (error) {
@@ -483,7 +561,55 @@ const updateProduct = async (req, res) => {
       productData.image = `/uploads/products/${req.file.filename}`;
     }
 
+    // Parse variations if present
+    let variations = [];
+    if (productData.variations) {
+      try {
+        variations = JSON.parse(productData.variations);
+      } catch (e) {
+        console.error('Error parsing variations:', e);
+      }
+    }
+
+    // Remove variations from productData as it's not a Product field
+    delete productData.variations;
+
     await product.update(productData);
+    
+    // Update variations if provided
+    if (variations.length > 0) {
+      const { ProductVariation } = require('../models');
+      
+      // Delete existing variations
+      await ProductVariation.destroy({
+        where: { product_id: id }
+      });
+      
+      // Create new variations
+      for (const variation of variations) {
+        for (const value of variation.values) {
+          const variationData = {
+            product_id: product.id,
+            size: null,
+            color: null,
+            price: productData.price || product.price,
+            stock: Math.floor((productData.stock || product.stock) / variations.length) || 0
+          };
+          
+          // Set the appropriate field based on variation type
+          if (variation.type === 'size') {
+            variationData.size = value;
+          } else if (variation.type === 'color') {
+            variationData.color = value;
+          } else {
+            // For material, other types, store in size field as fallback
+            variationData.size = `${variation.name}: ${value}`;
+          }
+          
+          await ProductVariation.create(variationData);
+        }
+      }
+    }
     
     return successResponse(res, 200, 'Produk berhasil diperbarui', { product });
   } catch (error) {

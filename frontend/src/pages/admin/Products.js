@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import { Card, Table, Button, Badge, Spinner, Alert, Form, InputGroup, Row, Col, Modal } from 'react-bootstrap';
+import { Card, Table, Button, Badge, Spinner, Alert, Form, InputGroup, Row, Col, Modal, Pagination } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrash, faPlus, faSearch, faFilter, faSave, faArrowLeft, faUpload, faImage } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
@@ -19,18 +19,33 @@ const ProductList = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10;
 
   // Fetch products
   useEffect(() => {
     fetchProducts();
     fetchCategories();
-  }, []);
+  }, [currentPage, searchTerm, selectedCategory]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/admin/products');
-      setProducts(Array.isArray(response.data.data.products) ? response.data.data.products : []);
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: itemsPerPage,
+        ...(searchTerm && { search: searchTerm }),
+        ...(selectedCategory && { category: selectedCategory })
+      });
+      
+      const response = await axios.get(`/api/admin/products?${params}`);
+      const data = response.data.data;
+      
+      setProducts(Array.isArray(data.products) ? data.products : []);
+      setTotalPages(data.totalPages || 1);
+      setTotalItems(data.totalItems || 0);
       setError(null);
     } catch (err) {
       console.error('Error fetching products:', err);
@@ -38,6 +53,8 @@ const ProductList = () => {
       setError(errorMessage);
       toast.error(errorMessage);
       setProducts([]);
+      setTotalPages(1);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
@@ -77,13 +94,16 @@ const ProductList = () => {
     }
   };
 
-  // Filter products by search term and category
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const categoryId = selectedCategory ? parseInt(selectedCategory, 10) : null;
-    const matchesCategory = selectedCategory === '' || (categoryId && !isNaN(categoryId) && product.category_id === categoryId);
-    return matchesSearch && matchesCategory;
-  });
+  // Reset to first page when search or filter changes
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handleCategoryChange = (value) => {
+    setSelectedCategory(value);
+    setCurrentPage(1);
+  };
 
   // Format currency
   const formatCurrency = (amount) => {
@@ -132,7 +152,7 @@ const ProductList = () => {
                 <Form.Control
                   placeholder="Cari produk..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                 />
               </InputGroup>
             </div>
@@ -143,7 +163,7 @@ const ProductList = () => {
                 </InputGroup.Text>
                 <Form.Select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
                 >
                   <option value="">Semua Kategori</option>
                   {categories.map(category => (
@@ -168,16 +188,17 @@ const ProductList = () => {
                 <th>Kategori</th>
                 <th>Harga</th>
                 <th>Stok</th>
+                <th>Status Stok</th>
                 <th>Status</th>
                 <th>Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map((product) => (
+              {products.map((product) => (
                 <tr key={product.id}>
                   <td>
                     <img 
-                      src={product.image || '/default.webp'} 
+                      src={product.image ? `${process.env.REACT_APP_API_URL}${product.image}` : '/default.webp'} 
                       alt={product.name} 
                       style={{ width: '50px', height: '50px', objectFit: 'cover' }} 
                     />
@@ -187,10 +208,11 @@ const ProductList = () => {
                     {categories.find(c => c.id === product.category_id)?.name || '-'}
                   </td>
                   <td>{formatCurrency(product.price)}</td>
-                  <td>{product.stock} {getStockBadge(product.stock)}</td>
+                  <td>{product.stock}</td>
+                  <td>{getStockBadge(product.stock)}</td>
                   <td>
-                    <Badge bg={product.status === 'active' ? 'success' : 'secondary'}>
-                      {product.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
+                    <Badge bg={product.is_active ? 'success' : 'secondary'}>
+                      {product.is_active ? 'Aktif' : 'Tidak Aktif'}
                     </Badge>
                   </td>
                   <td>
@@ -215,9 +237,9 @@ const ProductList = () => {
                   </td>
                 </tr>
               ))}
-              {filteredProducts.length === 0 && (
+              {products.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="text-center py-4">
+                  <td colSpan="8" className="text-center py-4">
                     Tidak ada produk yang ditemukan
                   </td>
                 </tr>
@@ -226,6 +248,60 @@ const ProductList = () => {
           </Table>
         </Card.Body>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="d-flex justify-content-between align-items-center mt-4">
+          <div className="text-muted">
+            Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalItems)} dari {totalItems} produk
+          </div>
+          <Pagination>
+            <Pagination.First 
+              onClick={() => setCurrentPage(1)} 
+              disabled={currentPage === 1}
+            />
+            <Pagination.Prev 
+              onClick={() => setCurrentPage(currentPage - 1)} 
+              disabled={currentPage === 1}
+            />
+            
+            {[...Array(totalPages)].map((_, index) => {
+              const page = index + 1;
+              const showPage = (
+                page === 1 || 
+                page === totalPages || 
+                (page >= currentPage - 2 && page <= currentPage + 2)
+              );
+              
+              if (!showPage) {
+                if (page === currentPage - 3 || page === currentPage + 3) {
+                  return <Pagination.Ellipsis key={page} />;
+                }
+                return null;
+              }
+              
+              return (
+                <Pagination.Item
+                  key={page}
+                  active={page === currentPage}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </Pagination.Item>
+              );
+            })}
+            
+            <Pagination.Next 
+              onClick={() => setCurrentPage(currentPage + 1)} 
+              disabled={currentPage === totalPages}
+            />
+            <Pagination.Last 
+              onClick={() => setCurrentPage(totalPages)} 
+              disabled={currentPage === totalPages}
+            />
+          </Pagination>
+        </div>
+      )}
 
       <ConfirmDialog
         show={showDeleteDialog}
@@ -310,11 +386,61 @@ const ProductForm = ({ mode = 'add' }) => {
       });
 
       if (product.image) {
-        setImagePreview(product.image);
+        setImagePreview(`${process.env.REACT_APP_API_URL}${product.image}`);
       }
 
-      if (product.variations) {
-        setVariations(product.variations);
+      if (product.variations && product.variations.length > 0) {
+        // Convert database variations to frontend format
+        const groupedVariations = {};
+        
+        product.variations.forEach(variation => {
+          if (variation.size) {
+            // Check if it's a standard size or custom variation
+            if (variation.size.includes(':')) {
+              // Custom variation (material, other)
+              const [name, value] = variation.size.split(':').map(s => s.trim());
+              const key = name.toLowerCase();
+              
+              if (!groupedVariations[key]) {
+                groupedVariations[key] = {
+                  name: name,
+                  type: 'other',
+                  values: []
+                };
+              }
+              if (!groupedVariations[key].values.includes(value)) {
+                groupedVariations[key].values.push(value);
+              }
+            } else {
+              // Standard size variation
+              if (!groupedVariations.size) {
+                groupedVariations.size = {
+                  name: 'Ukuran',
+                  type: 'size',
+                  values: []
+                };
+              }
+              if (!groupedVariations.size.values.includes(variation.size)) {
+                groupedVariations.size.values.push(variation.size);
+              }
+            }
+          }
+          
+          if (variation.color) {
+            if (!groupedVariations.color) {
+              groupedVariations.color = {
+                name: 'Warna',
+                type: 'color',
+                values: []
+              };
+            }
+            if (!groupedVariations.color.values.includes(variation.color)) {
+              groupedVariations.color.values.push(variation.color);
+            }
+          }
+        });
+        
+        setVariations(Object.values(groupedVariations));
       }
 
     } catch (err) {
