@@ -16,6 +16,8 @@ const Categories = () => {
     description: '',
     status: 'active'
   });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   // Fetch categories
   useEffect(() => {
@@ -44,6 +46,21 @@ const Categories = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  // Handle image change
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Handle add category button
   const handleAddCategory = () => {
     setModalMode('add');
@@ -52,6 +69,8 @@ const Categories = () => {
       description: '',
       status: 'active'
     });
+    setImageFile(null);
+    setImagePreview(null);
     setShowModal(true);
   };
 
@@ -64,6 +83,12 @@ const Categories = () => {
       description: category.description || '',
       status: category.status
     });
+    setImageFile(null);
+    setImagePreview(category.image ? (
+      category.image.includes('uploads/') 
+        ? `${process.env.REACT_APP_API_URL}/${category.image}` 
+        : `${process.env.REACT_APP_API_URL}/uploads/categories/${category.image}`
+    ) : null);
     setShowModal(true);
   };
 
@@ -72,10 +97,27 @@ const Categories = () => {
     e.preventDefault();
     
     try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('status', formData.status);
+      
+      if (imageFile) {
+        formDataToSend.append('image', imageFile);
+      }
+      
       if (modalMode === 'add') {
-        await axios.post('/api/admin/categories', formData);
+        await axios.post('/api/admin/categories', formDataToSend, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
       } else {
-        await axios.put(`/api/admin/categories/${selectedCategory.id}`, formData);
+        await axios.put(`/api/admin/categories/${selectedCategory.id}`, formDataToSend, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
       }
       
       setShowModal(false);
@@ -124,7 +166,7 @@ const Categories = () => {
           <Table responsive hover>
             <thead>
               <tr>
-                <th>ID</th>
+                <th>Gambar</th>
                 <th>Nama</th>
                 <th>Deskripsi</th>
                 <th>Status</th>
@@ -135,12 +177,31 @@ const Categories = () => {
             <tbody>
               {categories.map((category) => (
                 <tr key={category.id}>
-                  <td>{category.id}</td>
+                  <td>
+                    {category.image ? (
+                      <img 
+                        src={category.image.includes('uploads/') 
+                          ? `${process.env.REACT_APP_API_URL}/${category.image}` 
+                          : `${process.env.REACT_APP_API_URL}/uploads/categories/${category.image}`
+                        } 
+                        alt={category.name} 
+                        style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                        className="rounded"
+                      />
+                    ) : (
+                      <div 
+                        style={{ width: '50px', height: '50px' }}
+                        className="bg-light border rounded d-flex align-items-center justify-content-center"
+                      >
+                        <small className="text-muted">No Image</small>
+                      </div>
+                    )}
+                  </td>
                   <td>{category.name}</td>
                   <td>{category.description || '-'}</td>
                   <td>
-                    <span className={`badge bg-${category.status === 'active' ? 'success' : 'secondary'}`}>
-                      {category.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
+                    <span className={`badge bg-${category.is_active === true ? 'success' : 'secondary'}`}>
+                      {category.is_active === true ? 'Aktif' : 'Tidak Aktif'}
                     </span>
                   </td>
                   <td>{category.product_count || 0}</td>
@@ -206,6 +267,27 @@ const Categories = () => {
                 value={formData.description}
                 onChange={handleChange}
               />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Gambar Kategori</Form.Label>
+              <Form.Control
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+              {imagePreview && (
+                <div className="mt-2">
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                    className="rounded"
+                  />
+                </div>
+              )}
+              <Form.Text className="text-muted">
+                Format: JPG, PNG, GIF. Maksimal 5MB.
+              </Form.Text>
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Status</Form.Label>

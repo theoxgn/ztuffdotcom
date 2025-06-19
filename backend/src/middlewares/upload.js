@@ -51,6 +51,20 @@ const tutorialStorage = multer.diskStorage({
   }
 });
 
+// Category image upload configuration
+const categoryStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../../uploads/categories');
+    createDir(uploadDir);
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'category-' + uniqueSuffix + ext);
+  }
+});
+
 // File filter for images
 const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/')) {
@@ -85,6 +99,14 @@ const uploadTutorialImage = multer({
   fileFilter
 });
 
+const uploadCategoryImage = multer({
+  storage: categoryStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB
+  },
+  fileFilter
+});
+
 // Handle multer errors
 const handleUploadError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
@@ -111,5 +133,6 @@ module.exports = {
   uploadProductImage,
   uploadPaymentProof,
   uploadTutorialImage,
+  uploadCategoryImage,
   handleUploadError
 }; 

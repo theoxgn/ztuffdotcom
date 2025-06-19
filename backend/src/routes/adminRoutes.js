@@ -3,13 +3,16 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const { successResponse, errorResponse } = require('../utils/helpers');
 const { authenticate, isAdmin } = require('../middlewares/auth');
-const { uploadProductImage } = require('../middlewares/upload');
+const { uploadProductImage, uploadCategoryImage } = require('../middlewares/upload');
 
 // Admin dashboard data
 router.get('/dashboard', authenticate, isAdmin, adminController.getDashboardData);
 
 // Admin categories endpoints
 router.get('/categories', authenticate, isAdmin, adminController.getAllCategories);
+router.post('/categories', authenticate, isAdmin, uploadCategoryImage.single('image'), adminController.createCategory);
+router.put('/categories/:id', authenticate, isAdmin, uploadCategoryImage.single('image'), adminController.updateCategory);
+router.delete('/categories/:id', authenticate, isAdmin, adminController.deleteCategory);
 
 // Admin orders endpoints
 router.get('/orders', authenticate, isAdmin, adminController.getAllOrders);

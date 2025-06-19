@@ -70,9 +70,16 @@ const createCategory = async (req, res) => {
       return errorResponse(res, 400, 'Nama kategori sudah digunakan');
     }
     
+    // Handle image upload
+    let imagePath = null;
+    if (req.file) {
+      imagePath = req.file.filename;
+    }
+    
     const category = await Category.create({
       name,
       description,
+      image: imagePath,
       is_active: true
     });
     
@@ -110,9 +117,19 @@ const updateCategory = async (req, res) => {
       }
     }
     
+    // Handle image upload
+    let imagePath = category.image;
+    if (req.file) {
+      imagePath = req.file.filename;
+      
+      // TODO: Delete old image file if exists
+      // This would require implementing file deletion logic
+    }
+    
     await category.update({
       name: name || category.name,
       description: description !== undefined ? description : category.description,
+      image: imagePath,
       is_active: is_active !== undefined ? is_active : category.is_active
     });
     

@@ -1,5 +1,6 @@
 const { User, Product, Order, OrderItem, Category, Voucher, Tutorial, PaymentMethod, sequelize } = require('../models');
 const { successResponse, errorResponse } = require('../utils/helpers');
+const categoryController = require('./categoryController');
 
 /**
  * Get admin dashboard data
@@ -518,6 +519,9 @@ const deleteProduct = async (req, res) => {
 module.exports = {
   getDashboardData,
   getAllCategories,
+  createCategory: categoryController.createCategory,
+  updateCategory: categoryController.updateCategory,
+  deleteCategory: categoryController.deleteCategory,
   getAllOrders,
   getAllVouchers,
   getAllTutorials,
