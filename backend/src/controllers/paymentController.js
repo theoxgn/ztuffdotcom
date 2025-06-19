@@ -231,7 +231,9 @@ class PaymentController {
           }
         ],
         callbacks: {
-          finish: `${process.env.FRONTEND_URL}/checkout/success`
+          finish: `${process.env.FRONTEND_URL}/checkout/success`,
+          unfinish: `${process.env.FRONTEND_URL}/checkout/unfinish`,
+          error: `${process.env.FRONTEND_URL}/checkout/error`
         }
       };
 
@@ -445,6 +447,10 @@ class PaymentController {
 
   async handleNotification(req, res) {
     try {
+      console.log('=== WEBHOOK NOTIFICATION RECEIVED ===');
+      console.log('Headers:', req.headers);
+      console.log('Body:', JSON.stringify(req.body, null, 2));
+      
       const notification = new midtransClient.Snap({
         isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
         serverKey: process.env.MIDTRANS_SERVER_KEY
@@ -455,9 +461,86 @@ class PaymentController {
       const transactionStatus = statusResponse.transaction_status;
       const fraudStatus = statusResponse.fraud_status;
 
-      console.log(`Transaction notification received. Order ID: ${orderId}. Transaction status: ${transactionStatus}. Fraud status: ${fraudStatus}`);
+      console.log(`=== PROCESSING NOTIFICATION ===`);
+      console.log(`Order ID: ${orderId}`);
+      console.log(`Transaction Status: ${transactionStatus}`);
+      console.log(`Fraud Status: ${fraudStatus}`);
+      console.log(`Full Response:`, JSON.stringify(statusResponse, null, 2));
 
       // Find order by order_number
+      const order = await Order.findOne({
+        where: { order_number: orderId }
+      });
+
+      if (!order) {
+        console.log(`ERROR: Order not found for ID: ${orderId}`);
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      console.log(`Found order: ${order.id}, Current status: ${order.status}`);
+
+      // Extract payment information from notification
+      const paymentData = this.extractPaymentInfo(statusResponse);
+      console.log(`Extracted payment data:`, JSON.stringify(paymentData, null, 2));
+
+      let newStatus = order.status;
+      let updateData = {
+        payment_type: paymentData.payment_type,
+        payment_info: paymentData.payment_info,
+        midtrans_transaction_id: paymentData.midtrans_transaction_id,
+        midtrans_transaction_status: paymentData.midtrans_transaction_status
+      };
+
+      // Handle different transaction statuses
+      if (transactionStatus === 'capture' || transactionStatus === 'settlement') {
+        if (fraudStatus === 'challenge') {
+          newStatus = 'pending';
+          console.log('Payment captured but flagged for fraud review');
+        } else if (fraudStatus === 'accept' || !fraudStatus) {
+          newStatus = 'paid';
+          updateData.payment_date = new Date();
+          console.log('Payment successful - marking as paid');
+        }
+      } else if (transactionStatus === 'cancel' || transactionStatus === 'deny' || transactionStatus === 'expire') {
+        newStatus = 'cancelled';
+        console.log(`Payment failed/cancelled: ${transactionStatus}`);
+      } else if (transactionStatus === 'pending') {
+        newStatus = 'pending';
+        console.log('Payment still pending');
+      }
+
+      updateData.status = newStatus;
+
+      await order.update(updateData);
+      console.log(`Order updated successfully. New status: ${newStatus}`);
+
+      // Send success response to Midtrans
+      res.status(200).json({ 
+        success: true,
+        message: 'Notification processed successfully' 
+      });
+
+    } catch (error) {
+      console.error('=== WEBHOOK ERROR ===');
+      console.error('Error details:', error);
+      console.error('Stack trace:', error.stack);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Failed to handle notification',
+        error: error.message
+      });
+    }
+  }
+
+  // Manual payment status check (untuk development tanpa webhook)
+  async checkPaymentStatus(req, res) {
+    try {
+      const { orderId } = req.params;
+      
       const order = await Order.findOne({
         where: { order_number: orderId }
       });
@@ -469,54 +552,58 @@ class PaymentController {
         });
       }
 
-      // Extract payment information from notification
-      const paymentData = this.extractPaymentInfo(statusResponse);
+      // Check payment status dari Midtrans
+      const snap = new midtransClient.Snap({
+        isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+        serverKey: process.env.MIDTRANS_SERVER_KEY,
+        clientKey: process.env.MIDTRANS_CLIENT_KEY
+      });
 
-      // Handle different transaction statuses
-      if (transactionStatus === 'capture' || transactionStatus === 'settlement') {
-        if (fraudStatus === 'challenge') {
-          await order.update({ 
-            status: 'pending',
-            payment_type: paymentData.payment_type,
-            payment_info: paymentData.payment_info,
-            midtrans_transaction_id: paymentData.midtrans_transaction_id,
-            midtrans_transaction_status: paymentData.midtrans_transaction_status
-          });
-        } else if (fraudStatus === 'accept') {
-          await order.update({ 
-            status: 'paid',
-            payment_date: new Date(),
-            payment_type: paymentData.payment_type,
-            payment_info: paymentData.payment_info,
-            midtrans_transaction_id: paymentData.midtrans_transaction_id,
-            midtrans_transaction_status: paymentData.midtrans_transaction_status
-          });
+      const statusResponse = await snap.transaction.status(orderId);
+      console.log('Manual status check result:', JSON.stringify(statusResponse, null, 2));
+
+      // Update order status berdasarkan response
+      const paymentData = this.extractPaymentInfo(statusResponse);
+      let newStatus = order.status;
+      let updateData = {
+        payment_type: paymentData.payment_type,
+        payment_info: paymentData.payment_info,
+        midtrans_transaction_id: paymentData.midtrans_transaction_id,
+        midtrans_transaction_status: paymentData.midtrans_transaction_status
+      };
+
+      if (statusResponse.transaction_status === 'capture' || statusResponse.transaction_status === 'settlement') {
+        if (!statusResponse.fraud_status || statusResponse.fraud_status === 'accept') {
+          newStatus = 'paid';
+          updateData.payment_date = new Date();
         }
-      } else if (transactionStatus === 'cancel' || transactionStatus === 'deny' || transactionStatus === 'expire') {
-        await order.update({ 
-          status: 'cancelled',
-          payment_type: paymentData.payment_type,
-          payment_info: paymentData.payment_info,
-          midtrans_transaction_id: paymentData.midtrans_transaction_id,
-          midtrans_transaction_status: paymentData.midtrans_transaction_status
-        });
-      } else if (transactionStatus === 'pending') {
-        await order.update({ 
-          status: 'pending',
-          payment_type: paymentData.payment_type,
-          payment_info: paymentData.payment_info,
-          midtrans_transaction_id: paymentData.midtrans_transaction_id,
-          midtrans_transaction_status: paymentData.midtrans_transaction_status
-        });
+      } else if (['cancel', 'deny', 'expire'].includes(statusResponse.transaction_status)) {
+        newStatus = 'cancelled';
       }
 
-      res.json({ success: true });
+      if (newStatus !== order.status) {
+        updateData.status = newStatus;
+        await order.update(updateData);
+        console.log(`Order ${orderId} status updated to: ${newStatus}`);
+      }
+
+      res.json({
+        success: true,
+        data: {
+          order_id: orderId,
+          current_status: newStatus,
+          midtrans_status: statusResponse.transaction_status,
+          fraud_status: statusResponse.fraud_status,
+          updated: newStatus !== order.status
+        }
+      });
 
     } catch (error) {
-      console.error('Error handling notification:', error);
+      console.error('Error checking payment status:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to handle notification'
+        message: 'Failed to check payment status',
+        error: error.message
       });
     }
   }

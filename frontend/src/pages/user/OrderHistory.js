@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Card, Table, Badge, Button, Spinner, Alert, Tabs, Tab, Modal, Form, Row, Col, Container } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faCreditCard, faShoppingBag, faCalendarAlt, faMapMarkerAlt, faTruck, faCheckCircle, faTimesCircle, faClock, faBox } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faCreditCard, faShoppingBag, faCalendarAlt, faMapMarkerAlt, faTruck, faCheckCircle, faTimesCircle, faClock, faBox, faSync } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import AuthContext from '../../contexts/AuthContext';
 import { PaymentInfo } from '../../components';
@@ -21,6 +21,7 @@ const OrderHistory = () => {
   const [showPaymentInfoModal, setShowPaymentInfoModal] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState(null);
   const [paymentInfoLoading, setPaymentInfoLoading] = useState(false);
+  const [refreshingStatus, setRefreshingStatus] = useState(null);
 
   // Fetch orders
   useEffect(() => {
@@ -89,6 +90,30 @@ const OrderHistory = () => {
       setPaymentInfo(null);
     } finally {
       setPaymentInfoLoading(false);
+    }
+  };
+
+  // Handle refresh payment status
+  const handleRefreshStatus = async (order) => {
+    setRefreshingStatus(order.id);
+    
+    try {
+      const response = await axios.get(`/api/payment/check-status/${order.order_number}`);
+      
+      if (response.data.success && response.data.data.updated) {
+        // Refresh orders list
+        const ordersResponse = await axios.get('/api/orders');
+        setOrders(ordersResponse.data.data.orders || []);
+        
+        alert(`Status pembayaran diperbarui menjadi: ${response.data.data.current_status}`);
+      } else {
+        alert('Status pembayaran masih sama');
+      }
+    } catch (error) {
+      console.error('Error refreshing payment status:', error);
+      alert('Gagal memperbarui status pembayaran');
+    } finally {
+      setRefreshingStatus(null);
     }
   };
 
@@ -362,7 +387,7 @@ const OrderHistory = () => {
                     </Col>
                     
                     <Col lg={2} md={12} className="text-lg-end text-center">
-                      <div className="d-flex gap-2 justify-content-lg-end justify-content-center">
+                      <div className="d-flex gap-1 justify-content-lg-end justify-content-center flex-wrap">
                         <Button
                           variant="outline-primary"
                           size="sm"
@@ -381,6 +406,23 @@ const OrderHistory = () => {
                           <FontAwesomeIcon icon={faCreditCard} className="me-1" />
                           Bayar
                         </Button>
+                        {order.status === 'pending' && (
+                          <Button
+                            variant="outline-success"
+                            size="sm"
+                            onClick={() => handleRefreshStatus(order)}
+                            disabled={refreshingStatus === order.id}
+                            className="px-3 rounded-pill"
+                            title="Refresh status pembayaran"
+                          >
+                            {refreshingStatus === order.id ? (
+                              <Spinner animation="border" size="sm" />
+                            ) : (
+                              <FontAwesomeIcon icon={faSync} className="me-1" />
+                            )}
+                            {refreshingStatus === order.id ? 'Checking...' : 'Refresh'}
+                          </Button>
+                        )}
                       </div>
                     </Col>
                   </Row>

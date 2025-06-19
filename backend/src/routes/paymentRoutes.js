@@ -9,6 +9,8 @@ router.post('/snap/save-order', authenticate, (req, res) => paymentController.sa
 
 router.get('/info/:orderId', authenticate, (req, res) => paymentController.getPaymentInfo(req, res));
 
+router.get('/check-status/:orderId', authenticate, (req, res) => paymentController.checkPaymentStatus(req, res));
+
 router.post('/notification', (req, res) => paymentController.handleNotification(req, res));
 
 module.exports = router;
