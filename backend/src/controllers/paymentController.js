@@ -149,12 +149,13 @@ class PaymentController {
         destination_id,
         total_weight,
         notes,
-        items
+        items,
+        voucher_code
       } = req.body;
 
       const userId = req.user.id;
       
-      const { Product, ProductVariation } = require('../models');
+      const { Product, ProductVariation, Voucher } = require('../models');
       
       // Calculate subtotal from items
       let subtotal = 0;
@@ -191,7 +192,74 @@ class PaymentController {
         }
       }
 
-      const total = subtotal + parseFloat(shipping_cost);
+      // Handle voucher validation and discount calculation
+      let voucher = null;
+      let discountAmount = 0;
+      
+      if (voucher_code) {
+        try {
+          const { Op } = require('sequelize');
+          const now = new Date();
+          
+          voucher = await Voucher.findOne({
+            where: {
+              code: voucher_code,
+              is_active: true,
+              start_date: { [Op.lte]: now },
+              end_date: { [Op.or]: [{ [Op.gte]: now }, { [Op.is]: null }]}
+            }
+          });
+          
+          if (!voucher) {
+            return res.status(400).json({
+              success: false,
+              message: 'Voucher tidak valid atau sudah kadaluarsa'
+            });
+          }
+          
+          // Check usage limit
+          if (voucher.usage_limit !== null && voucher.used_count >= voucher.usage_limit) {
+            return res.status(400).json({
+              success: false,
+              message: 'Voucher sudah mencapai batas penggunaan'
+            });
+          }
+          
+          // Check minimum purchase
+          if (voucher.min_purchase > 0 && subtotal < voucher.min_purchase) {
+            return res.status(400).json({
+              success: false,
+              message: `Minimal pembelian untuk voucher ini adalah Rp ${voucher.min_purchase.toLocaleString('id-ID')}`
+            });
+          }
+          
+          // Calculate discount
+          if (voucher.discount_type === 'percentage') {
+            discountAmount = subtotal * (voucher.discount_value / 100);
+            
+            // Apply max discount if set
+            if (voucher.max_discount !== null && discountAmount > voucher.max_discount) {
+              discountAmount = voucher.max_discount;
+            }
+          } else {
+            discountAmount = voucher.discount_value;
+            
+            // Ensure discount doesn't exceed subtotal
+            if (discountAmount > subtotal) {
+              discountAmount = subtotal;
+            }
+          }
+          
+        } catch (error) {
+          console.error('Voucher validation error:', error);
+          return res.status(500).json({
+            success: false,
+            message: 'Gagal memvalidasi voucher'
+          });
+        }
+      }
+
+      const total = subtotal + parseFloat(shipping_cost) - discountAmount;
       
       // Generate unique order number
       const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -228,7 +296,13 @@ class PaymentController {
             price: Math.round(shipping_cost),
             quantity: 1,
             name: `Shipping (${courier_name} - ${courier_service})`
-          }
+          },
+          ...(discountAmount > 0 ? [{
+            id: 'discount',
+            price: -Math.round(discountAmount),
+            quantity: 1,
+            name: `Discount (${voucher_code})`
+          }] : [])
         ],
         callbacks: {
           finish: `${process.env.FRONTEND_URL}/checkout/success`,
@@ -248,6 +322,9 @@ class PaymentController {
         subtotal: subtotal,
         total: total,
         shipping_cost: shipping_cost,
+        discount_amount: discountAmount,
+        voucher_id: voucher ? voucher.id : null,
+        voucher_code: voucher_code || null,
         shipping_address,
         shipping_city,
         shipping_province,
@@ -378,6 +455,8 @@ class PaymentController {
         total: order_data.total,
         shipping_cost: order_data.shipping_cost,
         total_weight: order_data.total_weight,
+        discount_amount: order_data.discount_amount || 0,
+        voucher_id: order_data.voucher_id || null,
         shipping_address: order_data.shipping_address,
         shipping_city: order_data.shipping_city,
         shipping_province: order_data.shipping_province,
@@ -396,6 +475,14 @@ class PaymentController {
         midtrans_transaction_id: paymentData.midtrans_transaction_id,
         midtrans_transaction_status: paymentData.midtrans_transaction_status
       });
+
+      // Update voucher usage count if voucher was used and order is successful
+      if (order_data.voucher_id && orderStatus === 'paid') {
+        const { Voucher } = require('../models');
+        await Voucher.increment('used_count', {
+          where: { id: order_data.voucher_id }
+        });
+      }
 
       // Create order items with correct pricing
       const { Product, ProductVariation, OrderItem } = require('../models');

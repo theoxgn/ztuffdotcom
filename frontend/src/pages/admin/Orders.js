@@ -695,7 +695,7 @@ const OrderDetail = () => {
               </div>
               ${order?.discount_amount > 0 ? `
               <div class="total-row">
-                <span class="total-label">Diskon:</span>
+                <span class="total-label">Diskon Voucher${order?.voucher ? ` (${order.voucher.code})` : ''}:</span>
                 <span style="color: #dc3545;">-${formatCurrency(order?.discount_amount)}</span>
               </div>
               ` : ''}
@@ -856,7 +856,14 @@ const OrderDetail = () => {
                       )}
                       {order?.discount_amount > 0 && (
                         <tr>
-                          <th colSpan="3">Diskon</th>
+                          <th colSpan="3">
+                            Diskon Voucher
+                            {order?.voucher && (
+                              <div className="small text-muted fw-normal">
+                                {order.voucher.code} - {order.voucher.description}
+                              </div>
+                            )}
+                          </th>
                           <th>-{formatCurrency(order?.discount_amount)}</th>
                         </tr>
                       )}

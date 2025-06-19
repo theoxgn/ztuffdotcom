@@ -203,10 +203,10 @@ const OrderHistory = () => {
         </Alert>
       )}
       
-      {/* Desktop Tabs */}
-      <Card className="mb-4 border-0 shadow-sm d-none d-lg-block">
-        <Card.Body className="p-0">
-          <div className="d-flex">
+      {/* Compact Tabs */}
+      <Card className="mb-4 border-0 shadow-sm">
+        <Card.Body className="p-2">
+          <div className="d-flex overflow-auto">
             {[
               { key: 'all', label: 'Semua', icon: faShoppingBag, count: orders.length },
               { key: 'pending', label: 'Menunggu Pembayaran', icon: faClock, count: orders.filter(o => o.status === 'pending').length },
@@ -220,43 +220,39 @@ const OrderHistory = () => {
               return (
                 <div
                   key={tab.key}
-                  className={`flex-fill text-center py-3 px-2 position-relative tab-item ${
-                    isActive ? 'bg-primary text-white' : 'text-muted bg-hover'
+                  className={`text-center py-2 px-3 position-relative tab-item ${
+                    isActive ? 'bg-primary text-white rounded' : 'text-muted'
                   }`}
                   onClick={() => setActiveTab(tab.key)}
                   style={{ 
                     cursor: 'pointer',
-                    minWidth: '140px',
+                    minWidth: 'auto',
                     transition: 'all 0.3s ease',
-                    borderRight: index < 6 ? '1px solid #dee2e6' : 'none'
+                    marginRight: index < 6 ? '8px' : '0',
+                    whiteSpace: 'nowrap',
+                    flex: '0 0 auto'
                   }}
                 >
-                  <div className="d-flex flex-column align-items-center">
+                  <div className="d-flex align-items-center justify-content-center">
                     <FontAwesomeIcon 
                       icon={tab.icon} 
-                      className={`mb-2 ${isActive ? 'text-white' : 'text-primary'}`}
-                      size="lg"
+                      className={`me-2 ${isActive ? 'text-white' : 'text-primary'}`}
+                      size="sm"
                     />
-                    <div className="fw-semibold" style={{ fontSize: '0.8rem', lineHeight: 1.2 }}>
-                      {tab.label}
+                    <div className="fw-semibold d-flex align-items-center" style={{ fontSize: '0.85rem' }}>
+                      <span className="me-1">{tab.label}</span>
+                      {tab.count > 0 && (
+                        <Badge 
+                          bg={isActive ? 'light' : 'primary'} 
+                          text={isActive ? 'dark' : 'white'}
+                          className="rounded-pill"
+                          style={{ fontSize: '0.7rem', minWidth: '20px', height: '20px', lineHeight: '1.2' }}
+                        >
+                          {tab.count}
+                        </Badge>
+                      )}
                     </div>
-                    {tab.count > 0 && (
-                      <Badge 
-                        bg={isActive ? 'light' : 'primary'} 
-                        text={isActive ? 'dark' : 'white'}
-                        className="mt-1 rounded-pill"
-                        style={{ fontSize: '0.7rem' }}
-                      >
-                        {tab.count}
-                      </Badge>
-                    )}
                   </div>
-                  {isActive && (
-                    <div 
-                      className="position-absolute bottom-0 start-0 w-100 bg-white"
-                      style={{ height: '3px' }}
-                    />
-                  )}
                 </div>
               );
             })}
@@ -264,28 +260,24 @@ const OrderHistory = () => {
         </Card.Body>
       </Card>
 
-      {/* Mobile Dropdown */}
-      <Card className="mb-4 border-0 shadow-sm d-lg-none">
-        <Card.Body>
-          <Form.Select 
-            value={activeTab} 
-            onChange={(e) => setActiveTab(e.target.value)}
-            className="form-select-lg"
-          >
-            <option value="all">Semua ({orders.length})</option>
-            <option value="pending">Menunggu Pembayaran ({orders.filter(o => o.status === 'pending').length})</option>
-            <option value="paid">Sudah Dibayar ({orders.filter(o => o.status === 'paid').length})</option>
-            <option value="processing">Diproses ({orders.filter(o => o.status === 'processing').length})</option>
-            <option value="shipped">Dikirim ({orders.filter(o => o.status === 'shipped').length})</option>
-            <option value="delivered">Selesai ({orders.filter(o => o.status === 'delivered').length})</option>
-            <option value="cancelled">Dibatalkan ({orders.filter(o => o.status === 'cancelled').length})</option>
-          </Form.Select>
-        </Card.Body>
-      </Card>
-
       <style jsx>{`
         .tab-item:not(.bg-primary):hover {
           background-color: #f8f9fa !important;
+          border-radius: 4px !important;
+        }
+        .d-flex.overflow-auto::-webkit-scrollbar {
+          height: 4px;
+        }
+        .d-flex.overflow-auto::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 2px;
+        }
+        .d-flex.overflow-auto::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 2px;
+        }
+        .d-flex.overflow-auto::-webkit-scrollbar-thumb:hover {
+          background: #a8a8a8;
         }
       `}</style>
       
@@ -306,43 +298,22 @@ const OrderHistory = () => {
                 <Card.Body className="p-4">
                   <Row className="align-items-center">
                     <Col lg={3} md={4} className="mb-3 mb-md-0">
-                      <div className="d-flex align-items-center">
-                        <div className={`rounded-circle me-3 d-flex align-items-center justify-content-center ${
-                          getStatusBadgeVariant(order.status) === 'success' ? 'bg-success' :
-                          getStatusBadgeVariant(order.status) === 'warning' ? 'bg-warning' :
-                          getStatusBadgeVariant(order.status) === 'danger' ? 'bg-danger' :
-                          getStatusBadgeVariant(order.status) === 'info' ? 'bg-info' :
-                          getStatusBadgeVariant(order.status) === 'primary' ? 'bg-primary' : 'bg-secondary'
-                        }`} style={{ width: '48px', height: '48px' }}>
-                          <FontAwesomeIcon 
-                            icon={
-                              order.status === 'pending' ? faClock :
-                              order.status === 'paid' ? faCheckCircle :
-                              order.status === 'processing' ? faBox :
-                              order.status === 'shipped' ? faTruck :
-                              order.status === 'delivered' ? faCheckCircle :
-                              order.status === 'cancelled' ? faTimesCircle : faShoppingBag
-                            } 
-                            className="text-white" 
-                          />
-                        </div>
-                        <div>
-                          <h6 className="mb-1 text-primary fw-bold">{order.order_number}</h6>
-                          <div className="d-flex align-items-center">
-                            <FontAwesomeIcon icon={faCalendarAlt} className="text-muted me-1" size="sm" />
-                            <small className="text-muted">
-                              {new Date(order.createdAt).toLocaleDateString('id-ID', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric'
-                              })}
-                            </small>
-                          </div>
+                      <div>
+                        <h6 className="mb-1 text-primary fw-bold">{order.order_number}</h6>
+                        <div className="d-flex align-items-center">
+                          <FontAwesomeIcon icon={faCalendarAlt} className="text-muted me-1" size="sm" />
+                          <small className="text-muted">
+                            {new Date(order.createdAt).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </small>
                         </div>
                       </div>
                     </Col>
                     
-                    <Col lg={2} md={3} sm={6} className="mb-3 mb-lg-0">
+                    <Col lg={2} md={2} sm={6} className="mb-3 mb-lg-0">
                       <div className="text-center text-lg-start">
                         <small className="text-muted d-block">Total</small>
                         <h5 className="mb-0 text-success fw-bold">
@@ -363,7 +334,7 @@ const OrderHistory = () => {
                       </div>
                     </Col>
                     
-                    <Col lg={3} md={3} className="mb-3 mb-lg-0">
+                    <Col lg={3} md={4} className="mb-3 mb-lg-0">
                       <div>
                         {order.shipping_address && (
                           <div className="d-flex align-items-start mb-1">
@@ -437,91 +408,154 @@ const OrderHistory = () => {
       <Modal 
         show={showDetailsModal} 
         onHide={() => setShowDetailsModal(false)}
-        size="lg"
+        size="xl"
+        centered
       >
-        <Modal.Header closeButton>
-          <Modal.Title>Detail Pesanan</Modal.Title>
+        <Modal.Header closeButton className="bg-light">
+          <Modal.Title className="d-flex align-items-center">
+            <FontAwesomeIcon icon={faEye} className="me-2 text-primary" />
+            Detail Pesanan
+          </Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="p-4" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
           {detailsLoading ? (
-            <div className="text-center my-3">
-              <Spinner animation="border" size="sm" />
-              <p>Memuat detail pesanan...</p>
+            <div className="text-center my-5">
+              <Spinner animation="border" variant="primary" />
+              <p className="mt-2">Memuat detail pesanan...</p>
             </div>
           ) : orderDetails ? (
-            <div>
-              <div className="mb-4">
-                <h5>Informasi Pesanan</h5>
-                <hr />
-                <p><strong>ID Pesanan:</strong> {orderDetails.order_number}</p>
-                <p><strong>Tanggal:</strong> {new Date(orderDetails.createdAt).toLocaleString('id-ID')}</p>
-                <p>
-                  <strong>Status:</strong>{' '}
-                  <Badge bg={getStatusBadgeVariant(orderDetails.status)}>
-                    {getStatusDisplayText(orderDetails.status)}
-                  </Badge>
-                </p>
-                {orderDetails.tracking_number && (
-                  <p><strong>Nomor Resi:</strong> {orderDetails.tracking_number}</p>
-                )}
-              </div>
+            <Row>
+              {/* Left Column - Order & Shipping Info */}
+              <Col lg={4} className="mb-4">
+                <Card className="border-0 bg-light h-100">
+                  <Card.Body>
+                    <h6 className="fw-bold text-primary mb-3">
+                      <FontAwesomeIcon icon={faShoppingBag} className="me-2" />
+                      Informasi Pesanan
+                    </h6>
+                    <div className="mb-3">
+                      <small className="text-muted">ID Pesanan</small>
+                      <div className="fw-bold">{orderDetails.order_number}</div>
+                    </div>
+                    <div className="mb-3">
+                      <small className="text-muted">Tanggal</small>
+                      <div>{new Date(orderDetails.createdAt).toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}</div>
+                    </div>
+                    <div className="mb-3">
+                      <small className="text-muted">Status</small>
+                      <div>
+                        <Badge bg={getStatusBadgeVariant(orderDetails.status)} className="px-3 py-2">
+                          {getStatusDisplayText(orderDetails.status)}
+                        </Badge>
+                      </div>
+                    </div>
+                    {orderDetails.tracking_number && (
+                      <div className="mb-3">
+                        <small className="text-muted">Nomor Resi</small>
+                        <div className="fw-bold text-info">{orderDetails.tracking_number}</div>
+                      </div>
+                    )}
+                    
+                    <hr className="my-3" />
+                    
+                    <h6 className="fw-bold text-primary mb-3">
+                      <FontAwesomeIcon icon={faMapMarkerAlt} className="me-2" />
+                      Alamat Pengiriman
+                    </h6>
+                    <div className="small">
+                      <div className="mb-2">{orderDetails.shipping_address}</div>
+                      <div className="text-muted">
+                        {orderDetails.shipping_city}, {orderDetails.shipping_province} {orderDetails.shipping_postal_code}
+                      </div>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
               
-              <div className="mb-4">
-                <h5>Informasi Pengiriman</h5>
-                <hr />
-                <p><strong>Alamat:</strong> {orderDetails.shipping_address}</p>
-                <p><strong>Kota:</strong> {orderDetails.shipping_city}</p>
-                <p><strong>Provinsi:</strong> {orderDetails.shipping_province}</p>
-                <p><strong>Kode Pos:</strong> {orderDetails.shipping_postal_code}</p>
-              </div>
-              
-              <div className="mb-4">
-                <h5>Detail Produk</h5>
-                <hr />
-                <Table responsive>
-                  <thead>
-                    <tr>
-                      <th>Produk</th>
-                      <th>Harga</th>
-                      <th>Jumlah</th>
-                      <th>Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orderDetails.items?.map(item => (
-                      <tr key={item.id}>
-                        <td>
-                          {item.product?.name || 'Produk'}
-                          {item.variation && (
-                            <small className="d-block text-muted">
-                              {item.variation.size && item.variation.color ? 
-                                `${item.variation.size} - ${item.variation.color}` : ''}
-                            </small>
-                          )}
-                        </td>
-                        <td>Rp {parseFloat(item.price).toLocaleString('id-ID')}</td>
-                        <td>{item.quantity}</td>
-                        <td>Rp {parseFloat(item.total).toLocaleString('id-ID')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <td colSpan="3" className="text-end"><strong>Subtotal:</strong></td>
-                      <td>Rp {parseFloat(orderDetails.subtotal).toLocaleString('id-ID')}</td>
-                    </tr>
-                    <tr>
-                      <td colSpan="3" className="text-end"><strong>Biaya Pengiriman:</strong></td>
-                      <td>Rp {parseFloat(orderDetails.shipping_cost).toLocaleString('id-ID')}</td>
-                    </tr>
-                    <tr>
-                      <td colSpan="3" className="text-end"><strong>Total:</strong></td>
-                      <td>Rp {parseFloat(orderDetails.total).toLocaleString('id-ID')}</td>
-                    </tr>
-                  </tfoot>
-                </Table>
-              </div>
-            </div>
+              {/* Right Column - Products & Pricing */}
+              <Col lg={8}>
+                <Card className="border-0">
+                  <Card.Body className="p-0">
+                    <h6 className="fw-bold text-primary mb-3">
+                      <FontAwesomeIcon icon={faBox} className="me-2" />
+                      Detail Produk
+                    </h6>
+                    
+                    {/* Products List */}
+                    <div className="mb-4" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                      {orderDetails.items?.map(item => (
+                        <Card key={item.id} className="border mb-2">
+                          <Card.Body className="p-3">
+                            <Row className="align-items-center">
+                              <Col xs={6}>
+                                <div className="fw-semibold">{item.product?.name || 'Produk'}</div>
+                                {item.variation && (
+                                  <small className="text-muted">
+                                    {item.variation.size && item.variation.color ? 
+                                      `${item.variation.size} - ${item.variation.color}` : ''}
+                                  </small>
+                                )}
+                              </Col>
+                              <Col xs={2} className="text-center">
+                                <small className="text-muted">Qty</small>
+                                <div className="fw-bold">{item.quantity}</div>
+                              </Col>
+                              <Col xs={2} className="text-end">
+                                <small className="text-muted">Harga</small>
+                                <div className="fw-semibold">Rp {parseFloat(item.price).toLocaleString('id-ID')}</div>
+                              </Col>
+                              <Col xs={2} className="text-end">
+                                <small className="text-muted">Subtotal</small>
+                                <div className="fw-bold text-primary">Rp {parseFloat(item.total).toLocaleString('id-ID')}</div>
+                              </Col>
+                            </Row>
+                          </Card.Body>
+                        </Card>
+                      ))}
+                    </div>
+                    
+                    {/* Pricing Summary */}
+                    <Card className="border-primary">
+                      <Card.Body className="bg-light">
+                        <h6 className="fw-bold text-primary mb-3">Ringkasan Pembayaran</h6>
+                        <div className="d-flex justify-content-between mb-2">
+                          <span>Subtotal:</span>
+                          <span className="fw-semibold">Rp {parseFloat(orderDetails.subtotal).toLocaleString('id-ID')}</span>
+                        </div>
+                        <div className="d-flex justify-content-between mb-2">
+                          <span>Biaya Pengiriman:</span>
+                          <span className="fw-semibold">Rp {parseFloat(orderDetails.shipping_cost).toLocaleString('id-ID')}</span>
+                        </div>
+                        {orderDetails.discount_amount > 0 && (
+                          <div className="d-flex justify-content-between mb-2 text-success">
+                            <div>
+                              <span>Diskon Voucher:</span>
+                              {orderDetails.voucher && (
+                                <div className="small text-muted">
+                                  {orderDetails.voucher.code} - {orderDetails.voucher.description}
+                                </div>
+                              )}
+                            </div>
+                            <span className="fw-bold">-Rp {parseFloat(orderDetails.discount_amount).toLocaleString('id-ID')}</span>
+                          </div>
+                        )}
+                        <hr />
+                        <div className="d-flex justify-content-between">
+                          <span className="fw-bold fs-5">Total:</span>
+                          <span className="fw-bold fs-5 text-success">Rp {parseFloat(orderDetails.total).toLocaleString('id-ID')}</span>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
           ) : (
             <Alert variant="danger">
               Gagal memuat detail pesanan.

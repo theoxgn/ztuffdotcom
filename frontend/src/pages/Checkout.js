@@ -6,6 +6,7 @@ import * as Yup from 'yup';
 import axios from 'axios';
 import AuthContext from '../contexts/AuthContext';
 import CartContext from '../contexts/CartContext';
+import { VoucherSelector } from '../components';
 
 const Checkout = () => {
   const { currentUser } = useContext(AuthContext);
@@ -27,6 +28,8 @@ const Checkout = () => {
   const [loadingShipping, setLoadingShipping] = useState(false);
   const [orderData, setOrderData] = useState(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [voucherData, setVoucherData] = useState(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
   const navigate = useNavigate();
 
   // Fetch payment methods and origin settings
@@ -159,6 +162,24 @@ const Checkout = () => {
     }, 0);
   };
 
+  // Handle voucher applied
+  const handleVoucherApplied = (voucher) => {
+    setVoucherData(voucher);
+    setDiscountAmount(voucher.discount_amount);
+  };
+
+  // Handle voucher removed
+  const handleVoucherRemoved = () => {
+    setVoucherData(null);
+    setDiscountAmount(0);
+  };
+
+  // Calculate final total with discount
+  const getFinalTotal = () => {
+    const subtotal = getSubtotal();
+    return subtotal + shippingCost - discountAmount;
+  };
+
   // Validation schema
   const checkoutSchema = Yup.object({
     shipping_address: Yup.string()
@@ -206,6 +227,7 @@ const Checkout = () => {
         shipping_etd: shippingInfo?.etd || '',
         total_weight: getTotalWeight(),
         destination_id: selectedDestination?.id || '',
+        voucher_code: voucherData?.voucher_code || null,
         items: cartItems.map(item => ({
           product_id: item.product_id,
           variation_id: item.variation_id || null,
@@ -676,19 +698,37 @@ const Checkout = () => {
                 </span>
                 <span>Rp {shippingCost.toLocaleString('id-ID')}</span>
               </div>
+
+              {discountAmount > 0 && (
+                <div className="d-flex justify-content-between mb-2 text-success">
+                  <span>Diskon Voucher</span>
+                  <span>-Rp {discountAmount.toLocaleString('id-ID')}</span>
+                </div>
+              )}
               
-              <div className="d-flex justify-content-between mb-2">
+              <div className="d-flex justify-content-between mb-3">
                 <span>
                   Berat Total
                 </span>
                 <span>{(getTotalWeight() / 1000).toFixed(1)} kg</span>
+              </div>
+
+              {/* Voucher Selector */}
+              <div className="mb-3">
+                <label className="form-label fw-bold">Voucher Diskon</label>
+                <VoucherSelector
+                  subtotal={getSubtotal()}
+                  onVoucherApplied={handleVoucherApplied}
+                  onVoucherRemoved={handleVoucherRemoved}
+                  disabled={loading}
+                />
               </div>
               
               <hr />
               
               <div className="d-flex justify-content-between mb-0">
                 <strong>Total</strong>
-                <strong>Rp {(getSubtotal() + shippingCost).toLocaleString('id-ID')}</strong>
+                <strong>Rp {getFinalTotal().toLocaleString('id-ID')}</strong>
               </div>
             </Card.Body>
           </Card>

@@ -1,4 +1,4 @@
-const { Order, OrderItem, Product, ProductVariation, User, PaymentMethod } = require('../models');
+const { Order, OrderItem, Product, ProductVariation, User, PaymentMethod, Voucher } = require('../models');
 const { Op } = require('sequelize');
 const { successResponse, errorResponse, getPagination, getPaginationData } = require('../utils/helpers');
 const fs = require('fs');
@@ -168,6 +168,11 @@ const getOrderById = async (req, res) => {
           model: PaymentMethod,
           as: 'paymentMethod',
           attributes: ['id', 'name', 'account_number', 'account_name']
+        },
+        {
+          model: Voucher,
+          as: 'voucher',
+          attributes: ['id', 'code', 'description', 'discount_type', 'discount_value']
         }
       ]
     });
