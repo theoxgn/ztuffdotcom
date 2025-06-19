@@ -115,11 +115,61 @@ const successResponse = (res, statusCode = 200, message = 'Success', data = {}) 
  * @returns {object} - Formatted response
  */
 const errorResponse = (res, statusCode = 500, message = 'Server Error', errors = null) => {
-  return res.status(statusCode).json({
+  // Sanitize error message in production
+  let sanitizedMessage = message;
+  if (process.env.NODE_ENV === 'production') {
+    // Don't expose sensitive information in production
+    if (statusCode === 500) {
+      sanitizedMessage = 'Terjadi kesalahan pada server';
+    }
+  }
+
+  const response = {
     success: false,
-    message,
-    errors
-  });
+    message: sanitizedMessage
+  };
+
+  // Only include errors if not null and not in production
+  if (errors && process.env.NODE_ENV !== 'production') {
+    response.errors = errors;
+  }
+
+  return res.status(statusCode).json(response);
+};
+
+/**
+ * Sanitize user input to prevent XSS
+ * @param {string} input - User input
+ * @returns {string} - Sanitized input
+ */
+const sanitizeInput = (input) => {
+  if (typeof input !== 'string') return input;
+  
+  return input
+    .replace(/[<>]/g, '') // Remove < and >
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    .replace(/on\w+=/gi, '') // Remove event handlers
+    .trim();
+};
+
+/**
+ * Validate email format
+ * @param {string} email - Email address
+ * @returns {boolean} - Is valid email
+ */
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+/**
+ * Validate phone number format
+ * @param {string} phone - Phone number
+ * @returns {boolean} - Is valid phone
+ */
+const isValidPhone = (phone) => {
+  const phoneRegex = /^[0-9+\-\s()]{10,20}$/;
+  return phoneRegex.test(phone);
 };
 
 module.exports = {
@@ -130,5 +180,8 @@ module.exports = {
   getPagination,
   getPaginationData,
   successResponse,
-  errorResponse
+  errorResponse,
+  sanitizeInput,
+  isValidEmail,
+  isValidPhone
 }; 

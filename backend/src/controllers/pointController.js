@@ -1,6 +1,7 @@
 const { Point, User } = require('../models');
 const { successResponse, errorResponse, getPagination, getPaginationData } = require('../utils/helpers');
 const { Op } = require('sequelize');
+const sequelize = require('../config/database');
 
 /**
  * Get user points
@@ -81,6 +82,11 @@ const addPoints = async (req, res) => {
     if (!user_id || !amount) {
       return errorResponse(res, 400, 'ID pengguna dan jumlah poin harus diisi');
     }
+
+    // Validate amount
+    if (amount <= 0) {
+      return errorResponse(res, 400, 'Jumlah poin harus lebih dari 0');
+    }
     
     // Check if user exists
     const user = await User.findByPk(user_id);
@@ -117,6 +123,8 @@ const addPoints = async (req, res) => {
  * @returns {object} Response object
  */
 const redeemPoints = async (req, res) => {
+  const t = await sequelize.transaction();
+  
   try {
     const userId = req.user.id;
     const { amount, description } = req.body;
@@ -126,13 +134,16 @@ const redeemPoints = async (req, res) => {
       return errorResponse(res, 400, 'Jumlah poin harus diisi dan lebih dari 0');
     }
     
-    // Get current balance
+    // Get current balance with transaction lock
     const currentBalance = await Point.sum('amount', {
-      where: { user_id: userId }
+      where: { user_id: userId },
+      transaction: t,
+      lock: t.LOCK.UPDATE
     }) || 0;
     
     // Check if user has enough points
     if (currentBalance < amount) {
+      await t.rollback();
       return errorResponse(res, 400, 'Poin tidak mencukupi');
     }
     
@@ -143,13 +154,16 @@ const redeemPoints = async (req, res) => {
       type: 'redeemed',
       description: description || 'Poin ditukarkan',
       balance: currentBalance - amount
-    });
+    }, { transaction: t });
+    
+    await t.commit();
     
     return successResponse(res, 201, 'Poin berhasil ditukarkan', { 
       point,
       remainingPoints: currentBalance - amount
     });
   } catch (error) {
+    await t.rollback();
     console.error('Error in redeemPoints:', error);
     return errorResponse(res, 500, 'Terjadi kesalahan pada server');
   }

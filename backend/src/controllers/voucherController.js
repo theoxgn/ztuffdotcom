@@ -35,7 +35,7 @@ const getActiveVouchers = async (req, res) => {
       where: {
         is_active: true,
         start_date: { [Op.lte]: now },
-        end_date: { [Op.gte]: now }
+        end_date: { [Op.or]: [{ [Op.gte]: now }, { [Op.is]: null }]}
       },
       order: [['createdAt', 'DESC']]
     });
@@ -98,6 +98,40 @@ const createVoucher = async (req, res) => {
     // Validate discount type
     if (!['percentage', 'fixed'].includes(discount_type)) {
       return errorResponse(res, 400, 'Tipe diskon harus percentage atau fixed');
+    }
+
+    // Validate discount value
+    if (parseFloat(discount_value) <= 0) {
+      return errorResponse(res, 400, 'Nilai diskon harus lebih dari 0');
+    }
+
+    if (discount_type === 'percentage' && parseFloat(discount_value) > 100) {
+      return errorResponse(res, 400, 'Persentase diskon tidak boleh lebih dari 100%');
+    }
+
+    // Validate min_purchase
+    if (min_purchase && parseFloat(min_purchase) < 0) {
+      return errorResponse(res, 400, 'Minimal pembelian tidak boleh negatif');
+    }
+
+    // Validate max_discount for percentage type
+    if (discount_type === 'percentage' && max_discount && parseFloat(max_discount) <= 0) {
+      return errorResponse(res, 400, 'Maksimal diskon harus lebih dari 0');
+    }
+
+    // Validate usage_limit
+    if (usage_limit && parseInt(usage_limit) <= 0) {
+      return errorResponse(res, 400, 'Batas penggunaan harus lebih dari 0');
+    }
+
+    // Validate code format
+    if (!/^[A-Z0-9]{3,20}$/.test(code)) {
+      return errorResponse(res, 400, 'Kode voucher harus 3-20 karakter, hanya huruf besar dan angka');
+    }
+
+    // Validate dates
+    if (start_date && end_date && new Date(start_date) >= new Date(end_date)) {
+      return errorResponse(res, 400, 'Tanggal mulai harus lebih awal dari tanggal berakhir');
     }
     
     // Check if code already exists

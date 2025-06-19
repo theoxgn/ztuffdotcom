@@ -161,6 +161,27 @@ const createProduct = async (req, res) => {
   try {
     const { name, description, price, stock, weight, category_id, is_featured } = req.body;
     
+    // Input validation
+    if (!name || !price) {
+      return errorResponse(res, 400, 'Nama dan harga produk harus diisi');
+    }
+
+    if (name.length < 2 || name.length > 255) {
+      return errorResponse(res, 400, 'Nama produk harus antara 2-255 karakter');
+    }
+
+    if (parseFloat(price) < 0) {
+      return errorResponse(res, 400, 'Harga tidak boleh negatif');
+    }
+
+    if (stock && parseInt(stock) < 0) {
+      return errorResponse(res, 400, 'Stok tidak boleh negatif');
+    }
+
+    if (weight && parseFloat(weight) < 0) {
+      return errorResponse(res, 400, 'Berat tidak boleh negatif');
+    }
+
     // Create product
     const product = await Product.create({
       name,

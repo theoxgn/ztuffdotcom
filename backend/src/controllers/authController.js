@@ -12,6 +12,30 @@ const register = async (req, res) => {
   try {
     const { name, email, password, store_name, phone } = req.body;
 
+    // Input validation
+    if (!name || !email || !password) {
+      return errorResponse(res, 400, 'Nama, email, dan password harus diisi');
+    }
+
+    if (name.length < 2 || name.length > 100) {
+      return errorResponse(res, 400, 'Nama harus antara 2-100 karakter');
+    }
+
+    if (password.length < 6) {
+      return errorResponse(res, 400, 'Password minimal 6 karakter');
+    }
+
+    // Email format validation (additional check)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return errorResponse(res, 400, 'Format email tidak valid');
+    }
+
+    // Phone validation if provided
+    if (phone && !/^[0-9+\-\s()]{10,20}$/.test(phone)) {
+      return errorResponse(res, 400, 'Format nomor telepon tidak valid');
+    }
+
     // Check if email already exists
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {

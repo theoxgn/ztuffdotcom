@@ -236,10 +236,11 @@ const createOrder = async (req, res) => {
     for (const item of items) {
       const { product_id, variation_id, quantity } = item;
       
-      // Validate product
+      // Validate product with row-level lock to prevent race condition
       const product = await Product.findOne({
         where: { id: product_id, is_active: true },
-        transaction: t
+        transaction: t,
+        lock: t.LOCK.UPDATE
       });
       
       if (!product) {
@@ -254,7 +255,8 @@ const createOrder = async (req, res) => {
       if (variation_id) {
         variation = await ProductVariation.findOne({
           where: { id: variation_id, product_id, is_active: true },
-          transaction: t
+          transaction: t,
+          lock: t.LOCK.UPDATE
         });
         
         if (!variation) {

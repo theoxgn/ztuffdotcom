@@ -17,17 +17,29 @@ const Product = sequelize.define('Product', {
   },
   price: {
     type: DataTypes.DECIMAL(10, 2),
-    allowNull: false
+    allowNull: false,
+    validate: {
+      min: 0,
+      isDecimal: true
+    }
   },
   stock: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    defaultValue: 0
+    defaultValue: 0,
+    validate: {
+      min: 0,
+      isInt: true
+    }
   },
   weight: {
     type: DataTypes.FLOAT,
     allowNull: true,
-    defaultValue: 0
+    defaultValue: 0,
+    validate: {
+      min: 0,
+      isFloat: true
+    }
   },
   image: {
     type: DataTypes.STRING,

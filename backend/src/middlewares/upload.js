@@ -65,12 +65,37 @@ const categoryStorage = multer.diskStorage({
   }
 });
 
-// File filter for images
+// File filter for images with enhanced security
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
+  // Allowed MIME types
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/jpg', 
+    'image/png',
+    'image/gif',
+    'image/webp'
+  ];
+
+  // Allowed file extensions
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+  
+  const fileExtension = path.extname(file.originalname).toLowerCase();
+  
+  // Check MIME type and file extension
+  if (allowedMimeTypes.includes(file.mimetype) && allowedExtensions.includes(fileExtension)) {
+    // Additional filename validation
+    if (file.originalname.length > 255) {
+      return cb(new Error('Nama file terlalu panjang'), false);
+    }
+    
+    // Check for dangerous characters in filename
+    if (/[<>:"/\\|?*\x00-\x1f]/.test(file.originalname)) {
+      return cb(new Error('Nama file mengandung karakter tidak valid'), false);
+    }
+    
     cb(null, true);
   } else {
-    cb(new Error('Hanya file gambar yang diperbolehkan'), false);
+    cb(new Error('Hanya file gambar yang diperbolehkan (JPG, PNG, GIF, WebP)'), false);
   }
 };
 

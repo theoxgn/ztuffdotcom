@@ -112,8 +112,21 @@ const addToCart = async (req, res) => {
     });
     
     if (existingCartItem) {
-      // Update quantity
+      // Update quantity but check stock first
       const newQuantity = existingCartItem.quantity + quantity;
+      
+      // Re-check stock with new quantity
+      if (variation_id) {
+        const variation = await ProductVariation.findByPk(variation_id);
+        if (variation.stock < newQuantity) {
+          return errorResponse(res, 400, 'Stok tidak mencukupi untuk jumlah yang diminta');
+        }
+      } else {
+        if (product.stock < newQuantity) {
+          return errorResponse(res, 400, 'Stok tidak mencukupi untuk jumlah yang diminta');
+        }
+      }
+      
       await existingCartItem.update({
         quantity: newQuantity
       });

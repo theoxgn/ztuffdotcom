@@ -476,8 +476,8 @@ class PaymentController {
         midtrans_transaction_status: paymentData.midtrans_transaction_status
       });
 
-      // Update voucher usage count if voucher was used and order is successful
-      if (order_data.voucher_id && orderStatus === 'paid') {
+      // Update voucher usage count if voucher was used and order is created (paid or pending)
+      if (order_data.voucher_id && (orderStatus === 'paid' || orderStatus === 'pending')) {
         const { Voucher } = require('../models');
         await Voucher.increment('used_count', {
           where: { id: order_data.voucher_id }
