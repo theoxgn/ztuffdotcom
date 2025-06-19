@@ -25,6 +25,8 @@ const Checkout = () => {
   const [shippingOptions, setShippingOptions] = useState([]);
   const [selectedShippingOption, setSelectedShippingOption] = useState(null);
   const [loadingShipping, setLoadingShipping] = useState(false);
+  const [orderData, setOrderData] = useState(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const navigate = useNavigate();
 
   // Fetch payment methods and origin settings
@@ -167,8 +169,6 @@ const Checkout = () => {
       .required('Provinsi harus diisi'),
     shipping_postal_code: Yup.string()
       .required('Kode pos harus diisi'),
-    payment_method_id: Yup.string()
-      .required('Metode pembayaran harus dipilih'),
     notes: Yup.string()
   });
 
@@ -197,7 +197,7 @@ const Checkout = () => {
       setLoading(true);
       setError(null);
       
-      const orderData = {
+      const paymentData = {
         ...values,
         shipping_cost: shippingCost,
         courier: shippingInfo?.courier || '',
@@ -213,22 +213,105 @@ const Checkout = () => {
         }))
       };
       
-      const response = await axios.post('/api/orders', orderData);
+      // Create Midtrans snap token
+      const response = await axios.post('/api/payment/snap/create-token', paymentData);
       
+      if (response.data.success) {
+        const { snap_token, order_data } = response.data.data;
+        setOrderData(order_data);
+        
+        // Open Midtrans Snap
+        window.snap.pay(snap_token, {
+          onSuccess: function(result) {
+            handlePaymentSuccess(result, order_data);
+          },
+          onPending: function(result) {
+            // onPending dipanggil ketika user sudah memilih metode pembayaran
+            // tapi pembayaran masih dalam proses (seperti bank transfer, dll)
+            handlePaymentPending(result, order_data);
+          },
+          onError: function(result) {
+            handlePaymentError(result);
+          },
+          onClose: function() {
+            setShowCancelDialog(true);
+          }
+        });
+      } else {
+        setError(response.data.message || 'Terjadi kesalahan saat membuat pembayaran.');
+      }
+    } catch (error) {
+      console.error('Error creating payment:', error);
+      setError('Terjadi kesalahan saat membuat pembayaran. Silakan coba lagi.');
+    } finally {
+      setLoading(false);
+      setSubmitting(false);
+    }
+  };
+
+  // Handle payment success
+  const handlePaymentSuccess = async (result, orderData) => {
+    try {
+      const response = await axios.post('/api/payment/snap/save-order', {
+        order_data: orderData,
+        payment_result: result
+      });
+
       if (response.data.success) {
         setSuccess(true);
         setOrderId(response.data.data.order.id);
         clearCart();
       } else {
-        setError(response.data.message || 'Terjadi kesalahan saat membuat pesanan.');
+        setError('Terjadi kesalahan saat menyimpan pesanan.');
       }
     } catch (error) {
-      console.error('Error creating order:', error);
-      setError('Terjadi kesalahan saat membuat pesanan. Silakan coba lagi.');
-    } finally {
-      setLoading(false);
-      setSubmitting(false);
+      console.error('Error saving order:', error);
+      setError('Terjadi kesalahan saat menyimpan pesanan.');
     }
+  };
+
+
+  // Handle payment pending
+  const handlePaymentPending = async (result, orderData) => {
+    try {
+      // Update status order menjadi pending jika belum tersimpan
+      const response = await axios.post('/api/payment/snap/save-order', {
+        order_data: orderData,
+        payment_result: { 
+          ...result, 
+          status_code: '201',
+          transaction_status: 'pending'
+        }
+      });
+
+      if (response.data.success) {
+        setSuccess(true);
+        setOrderId(response.data.data.order.id);
+        clearCart();
+        setError('Pembayaran sedang diproses. Silakan tunggu konfirmasi.');
+      }
+    } catch (error) {
+      console.error('Error handling pending payment:', error);
+      setError('Pembayaran sedang diproses. Silakan tunggu konfirmasi.');
+    }
+  };
+
+  // Handle payment error
+  const handlePaymentError = (result) => {
+    setError('Pembayaran gagal. Silakan coba lagi.');
+  };
+
+  // Handle cancel confirmation
+  const handleCancelOrder = () => {
+    setShowCancelDialog(false);
+    setOrderData(null);
+    setError('Pesanan dibatalkan.');
+  };
+
+  // Handle continue payment
+  const handleContinuePayment = () => {
+    setShowCancelDialog(false);
+    // Optionally reopen payment
   };
 
   // If not logged in, redirect to login
@@ -324,7 +407,6 @@ const Checkout = () => {
                   shipping_city: currentUser?.city || '',
                   shipping_province: currentUser?.province || '',
                   shipping_postal_code: currentUser?.postal_code || '',
-                  payment_method_id: '',
                   notes: ''
                 }}
                 validationSchema={checkoutSchema}
@@ -526,32 +608,6 @@ const Checkout = () => {
                         />
                       </Form.Group>
                       
-                      <h4 className="mt-4 mb-3">Metode Pembayaran</h4>
-                      
-                      {paymentMethods.length === 0 ? (
-                        <p className="text-muted">Memuat metode pembayaran...</p>
-                      ) : (
-                        <div className="mb-3">
-                          {paymentMethods.map(method => (
-                            <Form.Check
-                              key={method.id}
-                              type="radio"
-                              id={`payment-${method.id}`}
-                              name="payment_method_id"
-                              value={method.id}
-                              label={method.name}
-                              onChange={handleChange}
-                              isInvalid={touched.payment_method_id && errors.payment_method_id}
-                              className="mb-2"
-                            />
-                          ))}
-                          {touched.payment_method_id && errors.payment_method_id && (
-                            <div className="text-danger small mt-1">
-                              {errors.payment_method_id}
-                            </div>
-                          )}
-                        </div>
-                      )}
                       
                       <div className="d-grid mt-4">
                         <Button 
@@ -561,7 +617,7 @@ const Checkout = () => {
                           className="px-5 py-3 fw-bold rounded-pill"
                           disabled={isSubmitting || loading}
                         >
-                          {isSubmitting || loading ? 'Memproses...' : 'Buat Pesanan'}
+                          {isSubmitting || loading ? 'Memproses...' : 'Lanjut ke Pembayaran'}
                         </Button>
                       </div>
                     </Form>
@@ -638,6 +694,35 @@ const Checkout = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Cancel Order Confirmation Dialog */}
+      {showCancelDialog && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999 }}>
+          <Card style={{ width: '90%', maxWidth: '400px' }}>
+            <Card.Body className="text-center p-4">
+              <h5 className="mb-3">Batalkan Pesanan?</h5>
+              <p className="mb-4">
+                Apakah Anda yakin akan membatalkan pesanan berikut? 
+                Data pesanan yang sudah diisi akan hilang.
+              </p>
+              <div className="d-grid gap-2">
+                <Button 
+                  variant="danger" 
+                  onClick={handleCancelOrder}
+                >
+                  Ya, Batalkan Pesanan
+                </Button>
+                <Button 
+                  variant="outline-secondary" 
+                  onClick={handleContinuePayment}
+                >
+                  Kembali
+                </Button>
+              </div>
+            </Card.Body>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

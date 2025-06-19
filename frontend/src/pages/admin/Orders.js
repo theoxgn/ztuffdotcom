@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { Card, Table, Button, Badge, Spinner, Alert, Form, InputGroup, Row, Col, Modal, Tab, Tabs } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faSearch, faFilter, faArrowLeft, faEdit, faCheck, faTimes, faShippingFast, faFileInvoice, faPrint, faComments } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faSearch, faFilter, faArrowLeft, faEdit, faCheck, faTimes, faShippingFast, faFileInvoice, faPrint, faComments, faCreditCard } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
+import { PaymentInfo } from '../../components';
 
 // Order List Component
 const OrderList = () => {
@@ -13,6 +14,10 @@ const OrderList = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [showPaymentInfoModal, setShowPaymentInfoModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [paymentInfo, setPaymentInfo] = useState(null);
+  const [paymentInfoLoading, setPaymentInfoLoading] = useState(false);
 
   // Fetch orders
   useEffect(() => {
@@ -86,6 +91,24 @@ const OrderList = () => {
         return <Badge bg="danger">Dibatalkan</Badge>;
       default:
         return <Badge bg="secondary">{status}</Badge>;
+    }
+  };
+
+  // Handle view payment info
+  const handleViewPaymentInfo = async (order) => {
+    setSelectedOrder(order);
+    setShowPaymentInfoModal(true);
+    setPaymentInfo(null);
+    setPaymentInfoLoading(true);
+    
+    try {
+      const response = await axios.get(`/api/payment/info/${order.id}`);
+      setPaymentInfo(response.data.data);
+    } catch (error) {
+      console.error('Error fetching payment info:', error);
+      setPaymentInfo(null);
+    } finally {
+      setPaymentInfoLoading(false);
     }
   };
 
@@ -182,14 +205,24 @@ const OrderList = () => {
                   <td>{formatCurrency(order.total)}</td>
                   <td>{getStatusBadge(order.status)}</td>
                   <td>
-                    <Button 
-                      variant="outline-primary" 
-                      size="sm"
-                      className="px-2 py-1"
-                      onClick={() => navigate(`/admin/orders/detail/${order.id}`)}
-                    >
-                      <FontAwesomeIcon icon={faEye} className="me-1" /> Detail
-                    </Button>
+                    <div className="d-flex gap-1">
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm"
+                        className="px-2 py-1"
+                        onClick={() => navigate(`/admin/orders/detail/${order.id}`)}
+                      >
+                        <FontAwesomeIcon icon={faEye} className="me-1" /> Detail
+                      </Button>
+                      <Button 
+                        variant="outline-info" 
+                        size="sm"
+                        className="px-2 py-1"
+                        onClick={() => handleViewPaymentInfo(order)}
+                      >
+                        <FontAwesomeIcon icon={faCreditCard} className="me-1" /> Pembayaran
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -204,6 +237,32 @@ const OrderList = () => {
           </Table>
         </Card.Body>
       </Card>
+
+      {/* Payment Info Modal */}
+      <Modal show={showPaymentInfoModal} onHide={() => setShowPaymentInfoModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Informasi Pembayaran - {selectedOrder?.order_number}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {paymentInfoLoading ? (
+            <div className="text-center py-4">
+              <Spinner animation="border" variant="primary" />
+              <p className="mt-2">Memuat informasi pembayaran...</p>
+            </div>
+          ) : paymentInfo ? (
+            <PaymentInfo paymentData={paymentInfo} showTitle={false} />
+          ) : (
+            <Alert variant="warning">
+              Informasi pembayaran tidak tersedia untuk pesanan ini.
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowPaymentInfoModal(false)}>
+            Tutup
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

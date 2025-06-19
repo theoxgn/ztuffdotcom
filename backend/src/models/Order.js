@@ -114,6 +114,26 @@ const Order = sequelize.define('Order', {
   destination_id: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  payment_type: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  payment_info: {
+    type: DataTypes.JSON,
+    allowNull: true
+  },
+  midtrans_order_id: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  midtrans_transaction_id: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  midtrans_transaction_status: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 });
 

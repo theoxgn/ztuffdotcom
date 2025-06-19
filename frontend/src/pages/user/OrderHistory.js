@@ -2,9 +2,10 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Card, Table, Badge, Button, Spinner, Alert, Tabs, Tab, Modal, Form } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faFileUpload, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faFileUpload, faCheck, faCreditCard } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import AuthContext from '../../contexts/AuthContext';
+import { PaymentInfo } from '../../components';
 
 const OrderHistory = () => {
   const { currentUser } = useContext(AuthContext);
@@ -21,6 +22,9 @@ const OrderHistory = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [showPaymentInfoModal, setShowPaymentInfoModal] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState(null);
+  const [paymentInfoLoading, setPaymentInfoLoading] = useState(false);
 
   // Fetch orders
   useEffect(() => {
@@ -112,6 +116,24 @@ const OrderHistory = () => {
       console.error('Error fetching order details:', error);
     } finally {
       setDetailsLoading(false);
+    }
+  };
+
+  // Handle view payment info
+  const handleViewPaymentInfo = async (order) => {
+    setSelectedOrder(order);
+    setShowPaymentInfoModal(true);
+    setPaymentInfo(null);
+    setPaymentInfoLoading(true);
+    
+    try {
+      const response = await axios.get(`/api/payment/info/${order.id}`);
+      setPaymentInfo(response.data.data);
+    } catch (error) {
+      console.error('Error fetching payment info:', error);
+      setPaymentInfo(null);
+    } finally {
+      setPaymentInfoLoading(false);
     }
   };
 
@@ -214,6 +236,15 @@ const OrderHistory = () => {
                         onClick={() => handleViewDetails(order)}
                       >
                         <FontAwesomeIcon icon={faEye} /> Detail
+                      </Button>
+                      
+                      <Button
+                        variant="outline-info"
+                        size="sm"
+                        className="me-2"
+                        onClick={() => handleViewPaymentInfo(order)}
+                      >
+                        <FontAwesomeIcon icon={faCreditCard} /> Pembayaran
                       </Button>
                       
                       {order.status === 'pending' && (
@@ -405,6 +436,32 @@ const OrderHistory = () => {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowDetailsModal(false)}>
+            Tutup
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Payment Info Modal */}
+      <Modal show={showPaymentInfoModal} onHide={() => setShowPaymentInfoModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Informasi Pembayaran - {selectedOrder?.order_number}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {paymentInfoLoading ? (
+            <div className="text-center py-4">
+              <Spinner animation="border" variant="primary" />
+              <p className="mt-2">Memuat informasi pembayaran...</p>
+            </div>
+          ) : paymentInfo ? (
+            <PaymentInfo paymentData={paymentInfo} showTitle={false} />
+          ) : (
+            <Alert variant="warning">
+              Informasi pembayaran tidak tersedia untuk pesanan ini.
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowPaymentInfoModal(false)}>
             Tutup
           </Button>
         </Modal.Footer>
