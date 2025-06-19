@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Container, Navbar, Nav, NavDropdown, Badge, Form, InputGroup, Button } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -14,14 +14,18 @@ import {
   faSearch,
   faHeart
 } from '@fortawesome/free-solid-svg-icons';
+import axios from 'axios';
 import AuthContext from '../contexts/AuthContext';
 import CartContext from '../contexts/CartContext';
+import WishlistContext from '../contexts/WishlistContext';
 
 const MainLayout = ({ children }) => {
   const { currentUser, logout } = useContext(AuthContext);
   const { cartItems } = useContext(CartContext);
+  const { getWishlistCount } = useContext(WishlistContext);
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [categories, setCategories] = useState([]);
 
   const handleLogout = () => {
     logout();
@@ -35,6 +39,21 @@ const MainLayout = ({ children }) => {
     }
   };
 
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get('/api/categories');
+        setCategories(Array.isArray(response.data.data.categories) ? response.data.data.categories : []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategories([]);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
   return (
     <div className="d-flex flex-column min-vh-100">
       <Navbar bg="white" expand="lg" sticky="top" className="py-3 border-bottom">
@@ -43,7 +62,7 @@ const MainLayout = ({ children }) => {
             <img 
               src="/logo/logo_navbar.png" 
               alt="Ztuff.com" 
-              height="80" 
+              height="60" 
               className="me-2"
             />
           </Navbar.Brand>
@@ -55,13 +74,19 @@ const MainLayout = ({ children }) => {
               <Nav.Link as={Link} to="/" className="mx-2">Home</Nav.Link>
               <Nav.Link as={Link} to="/products" className="mx-2">Products</Nav.Link>
               <NavDropdown title="Categories" id="categories-dropdown" className="mx-2">
-                <NavDropdown.Item as={Link} to="/products?category=1">Electronics</NavDropdown.Item>
-                <NavDropdown.Item as={Link} to="/products?category=2">Fashion</NavDropdown.Item>
-                <NavDropdown.Item as={Link} to="/products?category=3">Home & Living</NavDropdown.Item>
-                <NavDropdown.Divider />
+                {categories.slice(0, 8).map((category) => (
+                  <NavDropdown.Item 
+                    key={category.id} 
+                    as={Link} 
+                    to={`/products?category=${category.id}`}
+                  >
+                    {category.name}
+                  </NavDropdown.Item>
+                ))}
+                {categories.length > 0 && <NavDropdown.Divider />}
                 <NavDropdown.Item as={Link} to="/products">All Categories</NavDropdown.Item>
               </NavDropdown>
-              <Nav.Link as={Link} to="/tutorial" className="mx-2">Tutorials</Nav.Link>
+              {/* <Nav.Link as={Link} to="/tutorial" className="mx-2">Tutorials</Nav.Link> */}
             </Nav>
             
             <Form className="d-flex mx-auto" onSubmit={handleSearch}>
@@ -76,8 +101,8 @@ const MainLayout = ({ children }) => {
                 />
                 <Button 
                   variant="link" 
-                  className="position-absolute end-0 z-10 bg-transparent border-0"
-                  style={{ zIndex: 10, right: '0.5rem', top: '0.25rem' }}
+                  className="position-absolute end-0 bg-transparent border-0 d-flex align-items-center justify-content-center"
+                  style={{ zIndex: 10, right: '0.5rem', top: '50%', transform: 'translateY(-50%)', width: '2rem', height: '2rem' }}
                   type="submit"
                 >
                   <FontAwesomeIcon icon={faSearch} className="text-secondary" />
@@ -88,6 +113,16 @@ const MainLayout = ({ children }) => {
             <Nav className="ms-auto">
               <Nav.Link as={Link} to="/wishlist" className="mx-2 position-relative">
                 <FontAwesomeIcon icon={faHeart} />
+                {currentUser && getWishlistCount() > 0 && (
+                  <Badge 
+                    bg="danger" 
+                    pill 
+                    className="position-absolute top-0 start-100 translate-middle"
+                    style={{ fontSize: '0.6rem' }}
+                  >
+                    {getWishlistCount()}
+                  </Badge>
+                )}
               </Nav.Link>
               
               <Nav.Link as={Link} to="/cart" className="mx-2 position-relative">

@@ -19,6 +19,7 @@ import Profile from './pages/user/Profile';
 import OrderHistory from './pages/user/OrderHistory';
 import PointHistory from './pages/user/PointHistory';
 import Tutorial from './pages/Tutorial';
+import Wishlist from './pages/Wishlist';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -29,6 +30,7 @@ import AdminOrders from './pages/admin/Orders';
 // Context Provider
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
+import { WishlistProvider } from './contexts/WishlistContext';
 import { ToastProvider } from './components';
 
 // Protected Route Component
@@ -48,8 +50,9 @@ function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <ToastProvider>
-          <Router>
+        <WishlistProvider>
+          <ToastProvider>
+            <Router>
           <Routes>
             {/* Auth Routes */}
             <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
@@ -83,6 +86,11 @@ function App() {
                 </ProtectedRoute>
               </MainLayout>
             } />
+            <Route path="/wishlist" element={
+              <MainLayout>
+                <Wishlist />
+              </MainLayout>
+            } />
             
             {/* Admin Routes */}
             <Route path="/admin/*" element={
@@ -96,8 +104,9 @@ function App() {
             {/* Fallback Route */}
             <Route path="*" element={<MainLayout><Navigate to="/" /></MainLayout>} />
           </Routes>
-          </Router>
-        </ToastProvider>
+            </Router>
+          </ToastProvider>
+        </WishlistProvider>
       </CartProvider>
     </AuthProvider>
   );

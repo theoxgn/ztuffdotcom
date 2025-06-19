@@ -662,10 +662,55 @@ module.exports = {
         allowNull: false
       }
     });
+
+    // Create Wishlists table
+    await queryInterface.createTable('Wishlists', {
+      id: {
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
+        primaryKey: true
+      },
+      user_id: {
+        type: Sequelize.UUID,
+        references: {
+          model: 'Users',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+        allowNull: false
+      },
+      product_id: {
+        type: Sequelize.UUID,
+        references: {
+          model: 'Products',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+        allowNull: false
+      },
+      createdAt: {
+        type: Sequelize.DATE,
+        allowNull: false
+      },
+      updatedAt: {
+        type: Sequelize.DATE,
+        allowNull: false
+      }
+    });
+
+    // Add unique constraint for user_id and product_id
+    await queryInterface.addConstraint('Wishlists', {
+      fields: ['user_id', 'product_id'],
+      type: 'unique',
+      name: 'unique_user_product_wishlist'
+    });
   },
 
   down: async (queryInterface, Sequelize) => {
     // Drop tables in reverse order
+    await queryInterface.dropTable('Wishlists');
     await queryInterface.dropTable('Tutorials');
     await queryInterface.dropTable('Points');
     await queryInterface.dropTable('Carts');

@@ -15,11 +15,13 @@ import {
 import axios from 'axios';
 import CartContext from '../contexts/CartContext';
 import AuthContext from '../contexts/AuthContext';
+import WishlistContext from '../contexts/WishlistContext';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const { addToCart } = useContext(CartContext);
   const { currentUser } = useContext(AuthContext);
+  const { isInWishlist, toggleWishlist } = useContext(WishlistContext);
   const [product, setProduct] = useState(null);
   const [variations, setVariations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +33,7 @@ const ProductDetail = () => {
   const [addingToCart, setAddingToCart] = useState(false);
   const [cartMessage, setCartMessage] = useState(null);
   const [activeImage, setActiveImage] = useState(0);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   // Fetch product data
   useEffect(() => {
@@ -112,6 +115,29 @@ const ProductDetail = () => {
   // Get unique sizes and colors
   const sizes = [...new Set(variations.map(v => v.size).filter(Boolean))];
   const colors = [...new Set(variations.map(v => v.color).filter(Boolean))];
+
+  // Handle wishlist toggle
+  const handleWishlistToggle = async () => {
+    if (!currentUser) {
+      setCartMessage({ type: 'warning', text: 'Please login first to add products to your wishlist.' });
+      return;
+    }
+
+    try {
+      setWishlistLoading(true);
+      await toggleWishlist(product.id);
+      
+      const message = isInWishlist(product.id) 
+        ? 'Product removed from wishlist.' 
+        : 'Product added to wishlist.';
+      setCartMessage({ type: 'success', text: message });
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+      setCartMessage({ type: 'danger', text: 'Failed to update wishlist. Please try again.' });
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
 
   // Handle add to cart
   const handleAddToCart = async () => {
@@ -226,8 +252,24 @@ const ProductDetail = () => {
               <div className="d-flex justify-content-between align-items-start mb-2">
                 <Badge bg="primary" className="rounded-pill px-3 py-2">{product.category?.name || 'Product'}</Badge>
                 <div>
-                  <Button variant="light" size="sm" className="rounded-circle me-2" style={{ width: '36px', height: '36px', padding: '0' }} title="Add to Wishlist">
-                    <FontAwesomeIcon icon={faHeart} size="sm" />
+                  <Button 
+                    variant={isInWishlist(product.id) ? "danger" : "light"} 
+                    size="sm" 
+                    className="rounded-circle me-2" 
+                    style={{ width: '36px', height: '36px', padding: '0' }} 
+                    title={isInWishlist(product.id) ? "Remove from Wishlist" : "Add to Wishlist"}
+                    onClick={handleWishlistToggle}
+                    disabled={wishlistLoading}
+                  >
+                    {wishlistLoading ? (
+                      <Spinner animation="border" size="sm" />
+                    ) : (
+                      <FontAwesomeIcon 
+                        icon={faHeart} 
+                        size="sm" 
+                        className={isInWishlist(product.id) ? "text-white" : "text-danger"} 
+                      />
+                    )}
                   </Button>
                   <Button variant="light" size="sm" className="rounded-circle" style={{ width: '36px', height: '36px', padding: '0' }} title="Share">
                     <FontAwesomeIcon icon={faShare} size="sm" />
@@ -338,11 +380,11 @@ const ProductDetail = () => {
                   </Alert>
                 )}
                 
-                <div className="d-grid gap-2">
+                <div className="d-flex gap-2">
                   <Button 
                     variant="primary" 
                     size="lg"
-                    className="rounded-pill px-5 py-3 fw-bold"
+                    className="rounded-pill px-5 py-3 fw-bold flex-grow-1"
                     onClick={handleAddToCart}
                     disabled={
                       addingToCart || 
@@ -352,6 +394,23 @@ const ProductDetail = () => {
                   >
                     <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
                     {addingToCart ? 'Adding...' : 'Add to Cart'}
+                  </Button>
+                  <Button
+                    variant={isInWishlist(product.id) ? "danger" : "outline-danger"}
+                    size="lg"
+                    className="rounded-pill px-4 py-3"
+                    onClick={handleWishlistToggle}
+                    disabled={wishlistLoading}
+                    style={{ minWidth: '60px' }}
+                  >
+                    {wishlistLoading ? (
+                      <Spinner animation="border" size="sm" />
+                    ) : (
+                      <FontAwesomeIcon 
+                        icon={faHeart} 
+                        className={isInWishlist(product.id) ? "text-white" : "text-danger"} 
+                      />
+                    )}
                   </Button>
                 </div>
               </Form>

@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Row, Col, Card, Button, Form, InputGroup, Spinner, Alert, Pagination } from 'react-bootstrap';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faFilter, faSortAmountDown, faSortAmountUp } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faFilter, faSortAmountDown, faSortAmountUp, faHeart } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
+import WishlistContext from '../contexts/WishlistContext';
+import AuthContext from '../contexts/AuthContext';
 
 const Products = () => {
+  const { currentUser } = useContext(AuthContext);
+  const { isInWishlist, toggleWishlist } = useContext(WishlistContext);
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -19,6 +23,7 @@ const Products = () => {
   const [priceMin, setPriceMin] = useState(searchParams.get('min') || '');
   const [priceMax, setPriceMax] = useState(searchParams.get('max') || '');
   const [showFilters, setShowFilters] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState({});
 
   // Fetch products and categories
   useEffect(() => {
@@ -116,6 +121,23 @@ const Products = () => {
     newParams.set('page', 1);
     
     setSearchParams(newParams);
+  };
+
+  // Handle wishlist toggle
+  const handleWishlistToggle = async (productId) => {
+    if (!currentUser) {
+      // Could redirect to login or show login modal
+      return;
+    }
+
+    try {
+      setWishlistLoading(prev => ({ ...prev, [productId]: true }));
+      await toggleWishlist(productId);
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+    } finally {
+      setWishlistLoading(prev => ({ ...prev, [productId]: false }));
+    }
   };
 
   // Generate pagination items
@@ -341,7 +363,7 @@ const Products = () => {
             {products.map(product => (
               <Col key={product.id} lg={3} md={4} sm={6} className="mb-4">
                 <Card className="h-100 shadow-sm product-card">
-                  <div className="product-image-container">
+                  <div className="product-image-container position-relative">
                     <Card.Img 
                       variant="top" 
                       src={product.image || '/default.webp'} 
@@ -350,6 +372,25 @@ const Products = () => {
                       onError={(e) => { e.target.src = '/default.webp'; }}
                       style={{ height: '250px', objectFit: 'cover' }}
                     />
+                    <div className="position-absolute top-0 end-0 p-2">
+                      <Button
+                        variant={isInWishlist(product.id) ? "danger" : "light"}
+                        size="sm"
+                        className="rounded-circle border-0"
+                        style={{ width: '32px', height: '32px', padding: '0' }}
+                        onClick={() => handleWishlistToggle(product.id)}
+                        disabled={wishlistLoading[product.id]}
+                      >
+                        {wishlistLoading[product.id] ? (
+                          <Spinner animation="border" size="sm" />
+                        ) : (
+                          <FontAwesomeIcon 
+                            icon={faHeart} 
+                            className={isInWishlist(product.id) ? "text-white" : "text-danger"} 
+                          />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                   <Card.Body className="d-flex flex-column">
                     <Card.Title className="product-title">

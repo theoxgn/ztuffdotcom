@@ -13,6 +13,7 @@ const PaymentMethod = require('./PaymentMethod');
 const Voucher = require('./Voucher');
 const Point = require('./Point');
 const Tutorial = require('./Tutorial');
+const Wishlist = require('./Wishlist');
 
 // Define associations
 
@@ -72,6 +73,14 @@ Point.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 Order.hasMany(Point, { foreignKey: 'order_id' });
 Point.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
 
+// User - Wishlist
+User.hasMany(Wishlist, { foreignKey: 'user_id', as: 'wishlists' });
+Wishlist.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// Product - Wishlist
+Product.hasMany(Wishlist, { foreignKey: 'product_id' });
+Wishlist.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
+
 // Export models
 module.exports = {
   sequelize,
@@ -86,5 +95,6 @@ module.exports = {
   PaymentMethod,
   Voucher,
   Point,
-  Tutorial
+  Tutorial,
+  Wishlist
 }; 

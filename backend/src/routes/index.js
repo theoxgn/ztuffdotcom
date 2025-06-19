@@ -12,6 +12,7 @@ const tutorialRoutes = require('./tutorialRoutes');
 const paymentMethodRoutes = require('./paymentMethodRoutes');
 const pointRoutes = require('./pointRoutes');
 const adminRoutes = require('./adminRoutes');
+const wishlistRoutes = require('./wishlistRoutes');
 
 // Define API routes
 router.use('/auth', authRoutes);
@@ -24,6 +25,7 @@ router.use('/tutorials', tutorialRoutes);
 router.use('/payment-methods', paymentMethodRoutes);
 router.use('/points', pointRoutes);
 router.use('/admin', adminRoutes);
+router.use('/wishlist', wishlistRoutes);
 
 // API health check
 router.get('/', (req, res) => {

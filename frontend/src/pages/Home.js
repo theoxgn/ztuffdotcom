@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Row, Col, Card, Button, Spinner, Container } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -14,13 +14,18 @@ import {
   faStar,
   faHeart
 } from '@fortawesome/free-solid-svg-icons';
+import WishlistContext from '../contexts/WishlistContext';
+import AuthContext from '../contexts/AuthContext';
 
 const Home = () => {
+  const { currentUser } = useContext(AuthContext);
+  const { isInWishlist, toggleWishlist } = useContext(WishlistContext);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tutorials, setTutorials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [wishlistLoading, setWishlistLoading] = useState({});
 
   // Fetch data
   useEffect(() => {
@@ -53,6 +58,22 @@ const Home = () => {
 
     fetchData();
   }, []);
+
+  const handleWishlistToggle = async (productId) => {
+    if (!currentUser) {
+      // Redirect to login or show login modal
+      return;
+    }
+
+    try {
+      setWishlistLoading(prev => ({ ...prev, [productId]: true }));
+      await toggleWishlist(productId);
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+    } finally {
+      setWishlistLoading(prev => ({ ...prev, [productId]: false }));
+    }
+  };
 
   if (loading) {
     return (
@@ -200,6 +221,25 @@ const Home = () => {
                         </span>
                       </div>
                     )}
+                    <div className="position-absolute top-0 end-0 p-2">
+                      <Button
+                        variant={isInWishlist(product.id) ? "danger" : "light"}
+                        size="sm"
+                        className="rounded-circle border-0"
+                        style={{ width: '32px', height: '32px', padding: '0' }}
+                        onClick={() => handleWishlistToggle(product.id)}
+                        disabled={wishlistLoading[product.id]}
+                      >
+                        {wishlistLoading[product.id] ? (
+                          <Spinner animation="border" size="sm" />
+                        ) : (
+                          <FontAwesomeIcon 
+                            icon={faHeart} 
+                            className={isInWishlist(product.id) ? "text-white" : "text-danger"} 
+                          />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                   <Card.Body className="p-3">
                     <h6 className="fw-semibold mb-2" style={{ fontSize: '0.95rem', color: '#1a1a1a' }}>{product.name}</h6>
@@ -283,7 +323,7 @@ const Home = () => {
       </section>
 
       {/* Panduan Dropship */}
-      <section className="py-5" style={{ backgroundColor: '#f8f9fb' }}>
+      {/* <section className="py-5" style={{ backgroundColor: '#f8f9fb' }}>
         <Container>
           <div className="mb-5">
             <h2 className="fw-bold mb-2" style={{ color: '#1a1a1a', fontSize: '2rem' }}>Panduan Sukses</h2>
@@ -415,7 +455,7 @@ const Home = () => {
             </Col>
           </Row>
         </Container>
-      </section>
+      </section> */}
 
       <style jsx>{`
         .category-card:hover {
