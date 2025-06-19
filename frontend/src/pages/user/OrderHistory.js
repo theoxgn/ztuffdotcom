@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Card, Table, Badge, Button, Spinner, Alert, Tabs, Tab, Modal, Form } from 'react-bootstrap';
+import { Card, Table, Badge, Button, Spinner, Alert, Tabs, Tab, Modal, Form, Row, Col, Container } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faCreditCard } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faCreditCard, faShoppingBag, faCalendarAlt, faMapMarkerAlt, faTruck, faCheckCircle, faTimesCircle, faClock, faBox } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import AuthContext from '../../contexts/AuthContext';
 import { PaymentInfo } from '../../components';
@@ -10,6 +10,7 @@ import { PaymentInfo } from '../../components';
 const OrderHistory = () => {
   const { currentUser } = useContext(AuthContext);
   const [orders, setOrders] = useState([]);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
@@ -126,8 +127,50 @@ const OrderHistory = () => {
   }
 
   return (
-    <div>
+    <Container fluid className="px-4">
       <h2 className="mb-4">Riwayat Pesanan</h2>
+      
+      {/* Summary Stats */}
+      {orders.length > 0 && (
+        <Row className="mb-4">
+          <Col md={3} className="mb-3">
+            <Card className="border-0 h-100" style={{ background: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)' }}>
+              <Card.Body className="text-white text-center">
+                <FontAwesomeIcon icon={faShoppingBag} size="2x" className="mb-2" />
+                <h4 className="mb-0">{orders.length}</h4>
+                <small>Total Pesanan</small>
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col md={3} className="mb-3">
+            <Card className="border-0 h-100" style={{ background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)' }}>
+              <Card.Body className="text-white text-center">
+                <FontAwesomeIcon icon={faCheckCircle} size="2x" className="mb-2" />
+                <h4 className="mb-0">{orders.filter(o => o.status === 'delivered').length}</h4>
+                <small>Selesai</small>
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col md={3} className="mb-3">
+            <Card className="border-0 h-100" style={{ background: 'linear-gradient(135deg, #ffc107 0%, #ff8c00 100%)' }}>
+              <Card.Body className="text-white text-center">
+                <FontAwesomeIcon icon={faClock} size="2x" className="mb-2" />
+                <h4 className="mb-0">{orders.filter(o => o.status === 'pending').length}</h4>
+                <small>Menunggu</small>
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col md={3} className="mb-3">
+            <Card className="border-0 h-100" style={{ background: 'linear-gradient(135deg, #17a2b8 0%, #138496 100%)' }}>
+              <Card.Body className="text-white text-center">
+                <FontAwesomeIcon icon={faTruck} size="2x" className="mb-2" />
+                <h4 className="mb-0">{orders.filter(o => ['processing', 'shipped'].includes(o.status)).length}</h4>
+                <small>Dalam Proses</small>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
       
       {error && (
         <Alert variant="danger" className="mb-4">
@@ -159,52 +202,60 @@ const OrderHistory = () => {
           Tidak ada pesanan yang ditemukan.
         </Alert>
       ) : (
-        <Card className="shadow-sm">
-          <Card.Body>
-            <Table responsive>
-              <thead>
-                <tr>
-                  <th>ID Pesanan</th>
-                  <th>Tanggal</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map(order => (
-                  <tr key={order.id}>
-                    <td>{order.order_number}</td>
-                    <td>{new Date(order.createdAt).toLocaleDateString('id-ID')}</td>
-                    <td>Rp {parseFloat(order.total).toLocaleString('id-ID')}</td>
-                    <td>
-                      <Badge bg={getStatusBadgeVariant(order.status)}>
-                        {getStatusDisplayText(order.status)}
-                      </Badge>
-                    </td>
-                    <td>
+        <Card>
+          <Card.Body className="p-0">
+            {filteredOrders.map(order => (
+              <div key={order.id} className="border-bottom p-3">
+                <Row className="align-items-center">
+                  <Col md={3}>
+                    <h6 className="mb-1 text-primary">{order.order_number}</h6>
+                    <small className="text-muted">
+                      {new Date(order.createdAt).toLocaleDateString('id-ID')}
+                    </small>
+                  </Col>
+                  <Col md={2}>
+                    <strong>Rp {parseFloat(order.total).toLocaleString('id-ID')}</strong>
+                  </Col>
+                  <Col md={2}>
+                    <Badge bg={getStatusBadgeVariant(order.status)}>
+                      {getStatusDisplayText(order.status)}
+                    </Badge>
+                  </Col>
+                  <Col md={3}>
+                    {order.shipping_address && (
+                      <small className="text-muted text-truncate d-block">
+                        {order.shipping_address}
+                      </small>
+                    )}
+                    {order.tracking_number && (
+                      <small className="text-info">
+                        Resi: {order.tracking_number}
+                      </small>
+                    )}
+                  </Col>
+                  <Col md={2} className="text-end">
+                    <div className="d-flex gap-1 flex-column">
                       <Button
                         variant="outline-primary"
                         size="sm"
-                        className="me-2"
                         onClick={() => handleViewDetails(order)}
                       >
-                        <FontAwesomeIcon icon={faEye} /> Detail
+                        <FontAwesomeIcon icon={faEye} className="me-1" />
+                        Detail
                       </Button>
-                      
                       <Button
                         variant="outline-info"
                         size="sm"
-                        className="me-2"
                         onClick={() => handleViewPaymentInfo(order)}
                       >
-                        <FontAwesomeIcon icon={faCreditCard} /> Pembayaran
+                        <FontAwesomeIcon icon={faCreditCard} className="me-1" />
+                        Pembayaran
                       </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
+                    </div>
+                  </Col>
+                </Row>
+              </div>
+            ))}
           </Card.Body>
         </Card>
       )}
@@ -336,7 +387,7 @@ const OrderHistory = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-    </div>
+    </Container>
   );
 };
 

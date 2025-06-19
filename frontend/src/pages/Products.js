@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Row, Col, Card, Button, Form, InputGroup, Spinner, Alert, Pagination } from 'react-bootstrap';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faFilter, faSortAmountDown, faSortAmountUp, faHeart } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faFilter, faSortAmountDown, faSortAmountUp, faHeart, faTimes } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import WishlistContext from '../contexts/WishlistContext';
 import AuthContext from '../contexts/AuthContext';
@@ -36,16 +36,29 @@ const Products = () => {
         const page = searchParams.get('page') || 1;
         setCurrentPage(parseInt(page));
         
+        // Sync state with URL parameters
+        const urlSearchTerm = searchParams.get('search') || '';
+        const urlCategory = searchParams.get('category') || '';
+        const urlSort = searchParams.get('sort') || 'newest';
+        const urlMin = searchParams.get('min') || '';
+        const urlMax = searchParams.get('max') || '';
+        
+        setSearchTerm(urlSearchTerm);
+        setSelectedCategory(urlCategory);
+        setSortBy(urlSort);
+        setPriceMin(urlMin);
+        setPriceMax(urlMax);
+        
         // Build query parameters
         const params = new URLSearchParams();
         params.append('page', page);
         params.append('limit', 12); // Products per page
         
-        if (searchTerm) params.append('search', searchTerm);
-        if (selectedCategory) params.append('category', selectedCategory);
-        if (sortBy) params.append('sort', sortBy);
-        if (priceMin) params.append('min', priceMin);
-        if (priceMax) params.append('max', priceMax);
+        if (urlSearchTerm) params.append('search', urlSearchTerm);
+        if (urlCategory) params.append('category', urlCategory);
+        if (urlSort && urlSort !== 'newest') params.append('sort', urlSort);
+        if (urlMin) params.append('min', urlMin);
+        if (urlMax) params.append('max', urlMax);
         
         // Fetch products
         const productsResponse = await axios.get(`/api/products?${params.toString()}`);
@@ -78,13 +91,19 @@ const Products = () => {
 
   // Handle filter changes
   const applyFilters = () => {
-    updateSearchParams({
-      category: selectedCategory,
-      sort: sortBy,
-      min: priceMin,
-      max: priceMax,
+    const newParams = {
       page: 1
-    });
+    };
+    
+    // Only add non-empty values
+    if (searchTerm) newParams.search = searchTerm;
+    if (selectedCategory) newParams.category = selectedCategory;
+    if (sortBy && sortBy !== 'newest') newParams.sort = sortBy;
+    if (priceMin) newParams.min = priceMin;
+    if (priceMax) newParams.max = priceMax;
+    
+    updateSearchParams(newParams);
+    setShowFilters(false); // Hide filters after applying
   };
 
   // Handle page change
@@ -118,9 +137,43 @@ const Products = () => {
     
     const newParams = new URLSearchParams();
     if (searchTerm) newParams.set('search', searchTerm);
-    newParams.set('page', 1);
+    newParams.set('page', '1');
     
     setSearchParams(newParams);
+  };
+
+  // Handle sort change with immediate application
+  const handleSortChange = (newSort) => {
+    setSortBy(newSort);
+    const newParams = {
+      page: 1,
+      sort: newSort !== 'newest' ? newSort : undefined
+    };
+    
+    // Preserve other filters
+    if (searchTerm) newParams.search = searchTerm;
+    if (selectedCategory) newParams.category = selectedCategory;
+    if (priceMin) newParams.min = priceMin;
+    if (priceMax) newParams.max = priceMax;
+    
+    updateSearchParams(newParams);
+  };
+
+  // Handle category change with immediate application
+  const handleCategoryChange = (newCategory) => {
+    setSelectedCategory(newCategory);
+    const newParams = {
+      page: 1,
+      category: newCategory || undefined
+    };
+    
+    // Preserve other filters
+    if (searchTerm) newParams.search = searchTerm;
+    if (sortBy && sortBy !== 'newest') newParams.sort = sortBy;
+    if (priceMin) newParams.min = priceMin;
+    if (priceMax) newParams.max = priceMax;
+    
+    updateSearchParams(newParams);
   };
 
   // Handle wishlist toggle
@@ -257,7 +310,7 @@ const Products = () => {
                   <Form.Label>Kategori</Form.Label>
                   <Form.Select 
                     value={selectedCategory} 
-                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
                   >
                     <option value="">Semua Kategori</option>
                     {categories.map(category => (
@@ -273,7 +326,7 @@ const Products = () => {
                   <Form.Label>Urutkan</Form.Label>
                   <Form.Select 
                     value={sortBy} 
-                    onChange={(e) => setSortBy(e.target.value)}
+                    onChange={(e) => handleSortChange(e.target.value)}
                   >
                     <option value="newest">Terbaru</option>
                     <option value="oldest">Terlama</option>
@@ -329,6 +382,77 @@ const Products = () => {
         </Card>
       )}
       
+      {/* Active Filters Display */}
+      {(searchTerm || selectedCategory || (sortBy && sortBy !== 'newest') || priceMin || priceMax) && (
+        <div className="mb-3">
+          <div className="d-flex flex-wrap gap-2 align-items-center">
+            <span className="text-muted me-2">Filter aktif:</span>
+            {searchTerm && (
+              <span className="badge bg-primary">
+                Pencarian: {searchTerm}
+                <button 
+                  className="btn-close btn-close-white ms-2 small"
+                  onClick={() => {
+                    setSearchTerm('');
+                    updateSearchParams({ search: undefined, page: 1 });
+                  }}
+                ></button>
+              </span>
+            )}
+            {selectedCategory && (
+              <span className="badge bg-info">
+                Kategori: {categories.find(c => c.id === selectedCategory)?.name}
+                <button 
+                  className="btn-close btn-close-white ms-2 small"
+                  onClick={() => handleCategoryChange('')}
+                ></button>
+              </span>
+            )}
+            {sortBy && sortBy !== 'newest' && (
+              <span className="badge bg-success">
+                Urutan: {
+                  sortBy === 'oldest' ? 'Terlama' :
+                  sortBy === 'price_asc' ? 'Harga: Rendah-Tinggi' :
+                  sortBy === 'price_desc' ? 'Harga: Tinggi-Rendah' :
+                  sortBy === 'name_asc' ? 'Nama: A-Z' :
+                  sortBy === 'name_desc' ? 'Nama: Z-A' : sortBy
+                }
+                <button 
+                  className="btn-close btn-close-white ms-2 small"
+                  onClick={() => handleSortChange('newest')}
+                ></button>
+              </span>
+            )}
+            {(priceMin || priceMax) && (
+              <span className="badge bg-warning">
+                Harga: {priceMin ? `Rp ${parseInt(priceMin).toLocaleString('id-ID')}` : '0'} - {priceMax ? `Rp ${parseInt(priceMax).toLocaleString('id-ID')}` : '∞'}
+                <button 
+                  className="btn-close btn-close-white ms-2 small"
+                  onClick={() => {
+                    setPriceMin('');
+                    setPriceMax('');
+                    const newParams = { page: 1, min: undefined, max: undefined };
+                    if (searchTerm) newParams.search = searchTerm;
+                    if (selectedCategory) newParams.category = selectedCategory;
+                    if (sortBy && sortBy !== 'newest') newParams.sort = sortBy;
+                    updateSearchParams(newParams);
+                  }}
+                ></button>
+              </span>
+            )}
+            <Button 
+              variant="outline-secondary" 
+              size="sm"
+              onClick={resetFilters}
+              className="ms-2"
+            >
+              <FontAwesomeIcon icon={faTimes} className="me-1" />
+              Reset Semua
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Error Message */}
       {error && (
         <Alert variant="danger" className="mb-4">
