@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faHome, faUsers, faBoxes, faShoppingCart, 
-  faTag, faPercent, faBook
+  faTag, faPercent, faBook, faCog
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
@@ -17,6 +17,7 @@ import AdminOrders from './Orders';
 import AdminCategories from './Categories';
 import AdminVouchers from './Vouchers';
 import AdminTutorials from './Tutorials';
+import AdminSettings from './Settings';
 
 const Dashboard = () => {
   const location = useLocation();
@@ -53,6 +54,7 @@ const Dashboard = () => {
     if (path.includes('/admin/categories')) return 'categories';
     if (path.includes('/admin/vouchers')) return 'vouchers';
     if (path.includes('/admin/tutorials')) return 'tutorials';
+    if (path.includes('/admin/settings')) return 'settings';
     return 'home';
   };
 
@@ -63,7 +65,8 @@ const Dashboard = () => {
     { key: 'orders', path: '/admin/orders', icon: faShoppingCart, label: 'Pesanan' },
     { key: 'categories', path: '/admin/categories', icon: faTag, label: 'Kategori' },
     { key: 'vouchers', path: '/admin/vouchers', icon: faPercent, label: 'Voucher' },
-    { key: 'tutorials', path: '/admin/tutorials', icon: faBook, label: 'Tutorial' }
+    { key: 'tutorials', path: '/admin/tutorials', icon: faBook, label: 'Tutorial' },
+    { key: 'settings', path: '/admin/settings', icon: faCog, label: 'Settings' }
   ];
 
   return (
@@ -129,6 +132,7 @@ const Dashboard = () => {
               <Route path="/categories" element={<AdminCategories />} />
               <Route path="/vouchers/*" element={<AdminVouchers />} />
               <Route path="/tutorials/*" element={<AdminTutorials />} />
+              <Route path="/settings" element={<AdminSettings />} />
             </Routes>
           </div>
         </Col>

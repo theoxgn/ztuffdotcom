@@ -94,6 +94,26 @@ const Order = sequelize.define('Order', {
   tracking_number: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  courier: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  courier_service: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  courier_name: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  shipping_etd: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  destination_id: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 });
 

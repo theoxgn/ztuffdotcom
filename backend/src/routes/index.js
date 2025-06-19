@@ -13,6 +13,8 @@ const paymentMethodRoutes = require('./paymentMethodRoutes');
 const pointRoutes = require('./pointRoutes');
 const adminRoutes = require('./adminRoutes');
 const wishlistRoutes = require('./wishlistRoutes');
+const shippingRoutes = require('./shippingRoutes');
+const settingRoutes = require('./settingRoutes');
 
 // Define API routes
 router.use('/auth', authRoutes);
@@ -26,6 +28,8 @@ router.use('/payment-methods', paymentMethodRoutes);
 router.use('/points', pointRoutes);
 router.use('/admin', adminRoutes);
 router.use('/wishlist', wishlistRoutes);
+router.use('/shipping', shippingRoutes);
+router.use('/settings', settingRoutes);
 
 // API health check
 router.get('/', (req, res) => {

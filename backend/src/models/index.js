@@ -14,6 +14,7 @@ const Voucher = require('./Voucher');
 const Point = require('./Point');
 const Tutorial = require('./Tutorial');
 const Wishlist = require('./Wishlist');
+const Setting = require('./Setting');
 
 // Define associations
 
@@ -96,5 +97,6 @@ module.exports = {
   Voucher,
   Point,
   Tutorial,
-  Wishlist
+  Wishlist,
+  Setting
 }; 

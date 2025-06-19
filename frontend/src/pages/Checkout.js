@@ -17,32 +17,150 @@ const Checkout = () => {
   const [shippingCost, setShippingCost] = useState(0);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [shippingCity, setShippingCity] = useState(currentUser?.city || '');
+  const [shippingInfo, setShippingInfo] = useState(null);
+  const [addressSearchQuery, setAddressSearchQuery] = useState('');
+  const [addressDestinations, setAddressDestinations] = useState([]);
+  const [selectedDestination, setSelectedDestination] = useState(null);
+  const [originSettings, setOriginSettings] = useState(null);
+  const [shippingOptions, setShippingOptions] = useState([]);
+  const [selectedShippingOption, setSelectedShippingOption] = useState(null);
+  const [loadingShipping, setLoadingShipping] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch payment methods
+  // Fetch payment methods and origin settings
   useEffect(() => {
-    const fetchPaymentMethods = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get('/api/payment-methods');
-        setPaymentMethods(response.data.data.paymentMethods || []);
+        const [paymentResponse, originResponse] = await Promise.all([
+          axios.get('/api/payment-methods'),
+          axios.get('/api/settings/shipping-origin')
+        ]);
+        
+        setPaymentMethods(paymentResponse.data.data.paymentMethods || []);
+        
+        if (originResponse.data.success) {
+          setOriginSettings(originResponse.data.data);
+        }
       } catch (error) {
-        console.error('Error fetching payment methods:', error);
+        console.error('Error fetching data:', error);
       }
     };
 
-    fetchPaymentMethods();
+    fetchData();
   }, []);
 
-  // Update shipping cost when city changes
+
+  // Search destinations when query changes
   useEffect(() => {
-    const cost = calculateShippingCost(shippingCity);
-    setShippingCost(cost);
-  }, [shippingCity]);
+    const timer = setTimeout(() => {
+      searchAddressDestinations(addressSearchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [addressSearchQuery]);
+
+  // Handle shipping selection
+  const handleShippingChange = (shipping) => {
+    setShippingInfo(shipping);
+    setShippingCost(shipping.cost);
+  };
+
+  // Search destinations for address
+  const searchAddressDestinations = async (query) => {
+    if (!query || query.length < 3) {
+      setAddressDestinations([]);
+      return;
+    }
+    
+    try {
+      const response = await axios.get(`/api/shipping/search?search=${query}&limit=10`);
+      if (response.data.success) {
+        setAddressDestinations(response.data.data.data);
+      }
+    } catch (error) {
+      console.error('Error searching destinations:', error);
+    }
+  };
+
+  // Handle destination selection
+  const handleDestinationSelect = (destination, setFieldValue) => {
+    setSelectedDestination(destination);
+    setAddressDestinations([]);
+    setAddressSearchQuery('');
+    
+    // Auto-fill form fields
+    const addressParts = destination.label.split(', ');
+    if (addressParts.length >= 4) {
+      setFieldValue('shipping_city', addressParts[addressParts.length - 3] || '');
+      setFieldValue('shipping_province', addressParts[addressParts.length - 2] || '');
+      setFieldValue('shipping_postal_code', destination.zip_code || '');
+    }
+    
+    // Auto-calculate shipping if origin is available
+    if (originSettings?.origin_id) {
+      calculateShippingOptions(originSettings.origin_id, destination.id);
+    }
+  };
+
+  // Calculate shipping options using API
+  const calculateShippingOptions = async (originId, destinationId) => {
+    if (!originId || !destinationId) return;
+    
+    try {
+      setLoadingShipping(true);
+      const weight = getTotalWeight();
+      const response = await axios.post('/api/shipping/cost', {
+        origin: originId,
+        destination: destinationId,
+        weight: weight,
+        courier: 'jne:pos:tiki'
+      });
+
+      console.log('Shipping API Response:', response.data);
+
+      if (response.data.success && response.data.data?.data?.length > 0) {
+        setShippingOptions(response.data.data.data);
+        // Reset selected option when new options are loaded
+        setSelectedShippingOption(null);
+        setShippingInfo(null);
+        setShippingCost(0);
+      } else {
+        setShippingOptions([]);
+      }
+    } catch (error) {
+      console.error('Error calculating shipping cost:', error);
+      setShippingOptions([]);
+    } finally {
+      setLoadingShipping(false);
+    }
+  };
+
+  // Handle shipping option selection
+  const handleShippingOptionSelect = (option) => {
+    setSelectedShippingOption(option);
+    setShippingInfo({
+      cost: option.cost,
+      courier: option.code,
+      service: option.service,
+      etd: option.etd,
+      description: option.description,
+      courier_name: option.name
+    });
+    setShippingCost(option.cost);
+  };
+
+  // Calculate total weight from cart items
+  const getTotalWeight = () => {
+    return cartItems.reduce((total, item) => {
+      const weight = item.product?.weight || 500; // Default 500g if no weight
+      return total + (weight * item.quantity);
+    }, 0);
+  };
 
   // Validation schema
   const checkoutSchema = Yup.object({
     shipping_address: Yup.string()
-      .required('Alamat pengiriman harus diisi'),
+      .required('Detail alamat harus diisi'),
     shipping_city: Yup.string()
       .required('Kota harus diisi'),
     shipping_province: Yup.string()
@@ -54,29 +172,23 @@ const Checkout = () => {
     notes: Yup.string()
   });
 
-  // Calculate shipping cost
-  const calculateShippingCost = (city) => {
-    // In a real application, this would call an API to get shipping costs
-    // For now, we'll use a simple calculation based on the city
-    const baseShipping = 20000; // Base shipping cost
-    
-    // Add additional cost based on city (just for demonstration)
-    let additionalCost = 0;
-    if (city && city.toLowerCase().includes('jakarta')) {
-      additionalCost = 5000;
-    } else if (city && city.toLowerCase().includes('bandung')) {
-      additionalCost = 10000;
-    } else {
-      additionalCost = 15000;
-    }
-    
-    return baseShipping + additionalCost;
-  };
 
   // Handle form submission
   const handleSubmit = async (values, { setSubmitting }) => {
     if (cartItems.length === 0) {
       setError('Keranjang belanja Anda kosong.');
+      setSubmitting(false);
+      return;
+    }
+
+    if (!selectedDestination) {
+      setError('Silakan pilih alamat tujuan terlebih dahulu.');
+      setSubmitting(false);
+      return;
+    }
+
+    if (!shippingInfo) {
+      setError('Silakan pilih layanan pengiriman terlebih dahulu.');
       setSubmitting(false);
       return;
     }
@@ -88,6 +200,12 @@ const Checkout = () => {
       const orderData = {
         ...values,
         shipping_cost: shippingCost,
+        courier: shippingInfo?.courier || '',
+        courier_service: shippingInfo?.service || '',
+        courier_name: shippingInfo?.courier_name || '',
+        shipping_etd: shippingInfo?.etd || '',
+        total_weight: getTotalWeight(),
+        destination_id: selectedDestination?.id || '',
         items: cartItems.map(item => ({
           product_id: item.product_id,
           variation_id: item.variation_id || null,
@@ -231,21 +349,32 @@ const Checkout = () => {
                   return (
                     <Form onSubmit={handleSubmit}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Alamat</Form.Label>
+                        <Form.Label>Cari Alamat Tujuan</Form.Label>
                         <Form.Control
-                          as="textarea"
-                          rows={3}
-                          name="shipping_address"
-                          value={values.shipping_address}
-                          onChange={handleChange}
-                          onBlur={handleBlur}
-                          isInvalid={touched.shipping_address && errors.shipping_address}
+                          type="text"
+                          placeholder="Ketik nama kota/kabupaten untuk mencari..."
+                          value={addressSearchQuery}
+                          onChange={(e) => setAddressSearchQuery(e.target.value)}
                         />
-                        <Form.Control.Feedback type="invalid">
-                          {errors.shipping_address}
-                        </Form.Control.Feedback>
+                        {addressDestinations.length > 0 && (
+                          <Card className="mt-2 position-absolute w-100" style={{ zIndex: 1000 }}>
+                            <Card.Body className="p-2 max-height-200 overflow-auto">
+                              <div className="small text-muted mb-2">Pilih alamat tujuan:</div>
+                              {addressDestinations.map(dest => (
+                                <div 
+                                  key={dest.id}
+                                  className="p-2 border-bottom cursor-pointer hover-bg-light"
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={() => handleDestinationSelect(dest, setFieldValue)}
+                                >
+                                  <small>{dest.label}</small>
+                                </div>
+                              ))}
+                            </Card.Body>
+                          </Card>
+                        )}
                       </Form.Group>
-                      
+
                       <Row>
                         <Col md={4}>
                           <Form.Group className="mb-3">
@@ -257,6 +386,8 @@ const Checkout = () => {
                               onChange={handleCityChange}
                               onBlur={handleBlur}
                               isInvalid={touched.shipping_city && errors.shipping_city}
+                              readOnly
+                              className="bg-light"
                             />
                             <Form.Control.Feedback type="invalid">
                               {errors.shipping_city}
@@ -273,6 +404,8 @@ const Checkout = () => {
                               onChange={handleChange}
                               onBlur={handleBlur}
                               isInvalid={touched.shipping_province && errors.shipping_province}
+                              readOnly
+                              className="bg-light"
                             />
                             <Form.Control.Feedback type="invalid">
                               {errors.shipping_province}
@@ -289,6 +422,8 @@ const Checkout = () => {
                               onChange={handleChange}
                               onBlur={handleBlur}
                               isInvalid={touched.shipping_postal_code && errors.shipping_postal_code}
+                              readOnly
+                              className="bg-light"
                             />
                             <Form.Control.Feedback type="invalid">
                               {errors.shipping_postal_code}
@@ -296,6 +431,87 @@ const Checkout = () => {
                           </Form.Group>
                         </Col>
                       </Row>
+
+                      {selectedDestination && (
+                        <Alert variant="info" className="mb-3">
+                          <strong>Alamat Terpilih:</strong><br />
+                          {selectedDestination.label}
+                        </Alert>
+                      )}
+
+                      {loadingShipping && (
+                        <div className="text-center mb-3">
+                          <Spinner animation="border" size="sm" className="me-2" />
+                          Menghitung ongkos kirim...
+                        </div>
+                      )}
+
+                      {!loadingShipping && shippingOptions.length > 0 && (
+                        <Form.Group className="mb-3">
+                          <Form.Label>Pilih Kurir & Layanan</Form.Label>
+                          <Form.Select
+                            value={selectedShippingOption ? `${selectedShippingOption.code}-${selectedShippingOption.service}` : ''}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                const [courierCode, service] = e.target.value.split('-');
+                                const option = shippingOptions.find(opt => 
+                                  opt.code === courierCode && opt.service === service
+                                );
+                                if (option) {
+                                  handleShippingOptionSelect(option);
+                                }
+                              }
+                            }}
+                          >
+                            <option value="">Pilih layanan pengiriman...</option>
+                            {shippingOptions.map((option, index) => (
+                              <option 
+                                key={index} 
+                                value={`${option.code}-${option.service}`}
+                              >
+                                {option.name} - {option.service} ({option.description}) - Rp {option.cost.toLocaleString('id-ID')} - ETD: {option.etd}
+                              </option>
+                            ))}
+                          </Form.Select>
+                        </Form.Group>
+                      )}
+
+                      {!loadingShipping && selectedDestination && shippingOptions.length === 0 && (
+                        <Alert variant="warning" className="mb-3">
+                          Tidak ada layanan pengiriman tersedia untuk alamat ini.
+                        </Alert>
+                      )}
+
+                      <Form.Group className="mb-3">
+                        <Form.Label>Detail Alamat Lengkap</Form.Label>
+                        <Form.Control
+                          as="textarea"
+                          rows={3}
+                          name="shipping_address"
+                          value={values.shipping_address}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          isInvalid={touched.shipping_address && errors.shipping_address}
+                          placeholder="Masukkan detail alamat lengkap (nama jalan, nomor rumah, RT/RW, kelurahan, dll)"
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.shipping_address}
+                        </Form.Control.Feedback>
+                        <Form.Text className="text-muted">
+                          Contoh: Jl. Merdeka No. 123, RT 05/RW 02, Kelurahan Merdeka
+                        </Form.Text>
+                      </Form.Group>
+
+                      {shippingInfo && (
+                        <Alert variant="success" className="mb-3">
+                          <strong>Kurir Terpilih:</strong><br />
+                          {shippingInfo.courier_name} - {shippingInfo.description}
+                          <br />
+                          <strong>Biaya:</strong> Rp {shippingInfo.cost.toLocaleString('id-ID')}
+                          <br />
+                          <small>Estimasi: {shippingInfo.etd}</small>
+                        </Alert>
+                      )}
                       
                       <Form.Group className="mb-3">
                         <Form.Label>Catatan (Opsional)</Form.Label>
@@ -394,8 +610,22 @@ const Checkout = () => {
               </div>
               
               <div className="d-flex justify-content-between mb-2">
-                <span>Biaya Pengiriman</span>
+                <span>
+                  Biaya Pengiriman
+                  {shippingInfo && (
+                    <small className="d-block text-muted">
+                      {shippingInfo.courier.toUpperCase()} - {shippingInfo.service}
+                    </small>
+                  )}
+                </span>
                 <span>Rp {shippingCost.toLocaleString('id-ID')}</span>
+              </div>
+              
+              <div className="d-flex justify-content-between mb-2">
+                <span>
+                  Berat Total
+                </span>
+                <span>{(getTotalWeight() / 1000).toFixed(1)} kg</span>
               </div>
               
               <hr />
