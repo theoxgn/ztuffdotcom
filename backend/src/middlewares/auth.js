@@ -83,4 +83,26 @@ const isAdmin = (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, isAdmin }; 
+// Middleware to authorize specific roles
+const authorize = (roles = []) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Tidak ada token autentikasi'
+      });
+    }
+    
+    // If roles array is provided, check if user role is included
+    if (roles.length > 0 && !roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Akses ditolak. Anda tidak memiliki izin.'
+      });
+    }
+    
+    next();
+  };
+};
+
+module.exports = { authenticate, isAdmin, authorize }; 

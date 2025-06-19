@@ -93,7 +93,7 @@ const Home = () => {
             className="position-relative text-center text-white d-flex align-items-center justify-content-center"
             style={{
               minHeight: '60vh',
-              background: 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%), url("/banner1.jpg") center/cover no-repeat',
+              background: 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%), url("/banner1.png") center/cover no-repeat',
               borderRadius: '0 0 24px 24px'
             }}
           >

@@ -178,19 +178,91 @@ const OrderHistory = () => {
         </Alert>
       )}
       
-      <Tabs
-        activeKey={activeTab}
-        onSelect={(k) => setActiveTab(k)}
-        className="mb-4"
-      >
-        <Tab eventKey="all" title="Semua" />
-        <Tab eventKey="pending" title="Menunggu Pembayaran" />
-        <Tab eventKey="paid" title="Sudah Dibayar" />
-        <Tab eventKey="processing" title="Diproses" />
-        <Tab eventKey="shipped" title="Dikirim" />
-        <Tab eventKey="delivered" title="Selesai" />
-        <Tab eventKey="cancelled" title="Dibatalkan" />
-      </Tabs>
+      {/* Desktop Tabs */}
+      <Card className="mb-4 border-0 shadow-sm d-none d-lg-block">
+        <Card.Body className="p-0">
+          <div className="d-flex">
+            {[
+              { key: 'all', label: 'Semua', icon: faShoppingBag, count: orders.length },
+              { key: 'pending', label: 'Menunggu Pembayaran', icon: faClock, count: orders.filter(o => o.status === 'pending').length },
+              { key: 'paid', label: 'Sudah Dibayar', icon: faCreditCard, count: orders.filter(o => o.status === 'paid').length },
+              { key: 'processing', label: 'Diproses', icon: faBox, count: orders.filter(o => o.status === 'processing').length },
+              { key: 'shipped', label: 'Dikirim', icon: faTruck, count: orders.filter(o => o.status === 'shipped').length },
+              { key: 'delivered', label: 'Selesai', icon: faCheckCircle, count: orders.filter(o => o.status === 'delivered').length },
+              { key: 'cancelled', label: 'Dibatalkan', icon: faTimesCircle, count: orders.filter(o => o.status === 'cancelled').length }
+            ].map((tab, index) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <div
+                  key={tab.key}
+                  className={`flex-fill text-center py-3 px-2 position-relative tab-item ${
+                    isActive ? 'bg-primary text-white' : 'text-muted bg-hover'
+                  }`}
+                  onClick={() => setActiveTab(tab.key)}
+                  style={{ 
+                    cursor: 'pointer',
+                    minWidth: '140px',
+                    transition: 'all 0.3s ease',
+                    borderRight: index < 6 ? '1px solid #dee2e6' : 'none'
+                  }}
+                >
+                  <div className="d-flex flex-column align-items-center">
+                    <FontAwesomeIcon 
+                      icon={tab.icon} 
+                      className={`mb-2 ${isActive ? 'text-white' : 'text-primary'}`}
+                      size="lg"
+                    />
+                    <div className="fw-semibold" style={{ fontSize: '0.8rem', lineHeight: 1.2 }}>
+                      {tab.label}
+                    </div>
+                    {tab.count > 0 && (
+                      <Badge 
+                        bg={isActive ? 'light' : 'primary'} 
+                        text={isActive ? 'dark' : 'white'}
+                        className="mt-1 rounded-pill"
+                        style={{ fontSize: '0.7rem' }}
+                      >
+                        {tab.count}
+                      </Badge>
+                    )}
+                  </div>
+                  {isActive && (
+                    <div 
+                      className="position-absolute bottom-0 start-0 w-100 bg-white"
+                      style={{ height: '3px' }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card.Body>
+      </Card>
+
+      {/* Mobile Dropdown */}
+      <Card className="mb-4 border-0 shadow-sm d-lg-none">
+        <Card.Body>
+          <Form.Select 
+            value={activeTab} 
+            onChange={(e) => setActiveTab(e.target.value)}
+            className="form-select-lg"
+          >
+            <option value="all">Semua ({orders.length})</option>
+            <option value="pending">Menunggu Pembayaran ({orders.filter(o => o.status === 'pending').length})</option>
+            <option value="paid">Sudah Dibayar ({orders.filter(o => o.status === 'paid').length})</option>
+            <option value="processing">Diproses ({orders.filter(o => o.status === 'processing').length})</option>
+            <option value="shipped">Dikirim ({orders.filter(o => o.status === 'shipped').length})</option>
+            <option value="delivered">Selesai ({orders.filter(o => o.status === 'delivered').length})</option>
+            <option value="cancelled">Dibatalkan ({orders.filter(o => o.status === 'cancelled').length})</option>
+          </Form.Select>
+        </Card.Body>
+      </Card>
+
+      <style jsx>{`
+        .tab-item:not(.bg-primary):hover {
+          background-color: #f8f9fa !important;
+        }
+      `}</style>
       
       {loading ? (
         <div className="text-center my-5">
@@ -202,62 +274,121 @@ const OrderHistory = () => {
           Tidak ada pesanan yang ditemukan.
         </Alert>
       ) : (
-        <Card>
-          <Card.Body className="p-0">
-            {filteredOrders.map(order => (
-              <div key={order.id} className="border-bottom p-3">
-                <Row className="align-items-center">
-                  <Col md={3}>
-                    <h6 className="mb-1 text-primary">{order.order_number}</h6>
-                    <small className="text-muted">
-                      {new Date(order.createdAt).toLocaleDateString('id-ID')}
-                    </small>
-                  </Col>
-                  <Col md={2}>
-                    <strong>Rp {parseFloat(order.total).toLocaleString('id-ID')}</strong>
-                  </Col>
-                  <Col md={2}>
-                    <Badge bg={getStatusBadgeVariant(order.status)}>
-                      {getStatusDisplayText(order.status)}
-                    </Badge>
-                  </Col>
-                  <Col md={3}>
-                    {order.shipping_address && (
-                      <small className="text-muted text-truncate d-block">
-                        {order.shipping_address}
-                      </small>
-                    )}
-                    {order.tracking_number && (
-                      <small className="text-info">
-                        Resi: {order.tracking_number}
-                      </small>
-                    )}
-                  </Col>
-                  <Col md={2} className="text-end">
-                    <div className="d-flex gap-1 flex-column">
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={() => handleViewDetails(order)}
-                      >
-                        <FontAwesomeIcon icon={faEye} className="me-1" />
-                        Detail
-                      </Button>
-                      <Button
-                        variant="outline-info"
-                        size="sm"
-                        onClick={() => handleViewPaymentInfo(order)}
-                      >
-                        <FontAwesomeIcon icon={faCreditCard} className="me-1" />
-                        Pembayaran
-                      </Button>
-                    </div>
-                  </Col>
-                </Row>
-              </div>
-            ))}
-          </Card.Body>
-        </Card>
+        <div className="row g-3">
+          {filteredOrders.map(order => (
+            <div key={order.id} className="col-12">
+              <Card className="border-0 shadow-sm h-100 order-card">
+                <Card.Body className="p-4">
+                  <Row className="align-items-center">
+                    <Col lg={3} md={4} className="mb-3 mb-md-0">
+                      <div className="d-flex align-items-center">
+                        <div className={`rounded-circle me-3 d-flex align-items-center justify-content-center ${
+                          getStatusBadgeVariant(order.status) === 'success' ? 'bg-success' :
+                          getStatusBadgeVariant(order.status) === 'warning' ? 'bg-warning' :
+                          getStatusBadgeVariant(order.status) === 'danger' ? 'bg-danger' :
+                          getStatusBadgeVariant(order.status) === 'info' ? 'bg-info' :
+                          getStatusBadgeVariant(order.status) === 'primary' ? 'bg-primary' : 'bg-secondary'
+                        }`} style={{ width: '48px', height: '48px' }}>
+                          <FontAwesomeIcon 
+                            icon={
+                              order.status === 'pending' ? faClock :
+                              order.status === 'paid' ? faCheckCircle :
+                              order.status === 'processing' ? faBox :
+                              order.status === 'shipped' ? faTruck :
+                              order.status === 'delivered' ? faCheckCircle :
+                              order.status === 'cancelled' ? faTimesCircle : faShoppingBag
+                            } 
+                            className="text-white" 
+                          />
+                        </div>
+                        <div>
+                          <h6 className="mb-1 text-primary fw-bold">{order.order_number}</h6>
+                          <div className="d-flex align-items-center">
+                            <FontAwesomeIcon icon={faCalendarAlt} className="text-muted me-1" size="sm" />
+                            <small className="text-muted">
+                              {new Date(order.createdAt).toLocaleDateString('id-ID', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </small>
+                          </div>
+                        </div>
+                      </div>
+                    </Col>
+                    
+                    <Col lg={2} md={3} sm={6} className="mb-3 mb-lg-0">
+                      <div className="text-center text-lg-start">
+                        <small className="text-muted d-block">Total</small>
+                        <h5 className="mb-0 text-success fw-bold">
+                          Rp {parseFloat(order.total).toLocaleString('id-ID')}
+                        </h5>
+                      </div>
+                    </Col>
+                    
+                    <Col lg={2} md={2} sm={6} className="mb-3 mb-lg-0">
+                      <div className="text-center">
+                        <Badge 
+                          bg={getStatusBadgeVariant(order.status)} 
+                          className="px-3 py-2 rounded-pill"
+                          style={{ fontSize: '0.8rem' }}
+                        >
+                          {getStatusDisplayText(order.status)}
+                        </Badge>
+                      </div>
+                    </Col>
+                    
+                    <Col lg={3} md={3} className="mb-3 mb-lg-0">
+                      <div>
+                        {order.shipping_address && (
+                          <div className="d-flex align-items-start mb-1">
+                            <FontAwesomeIcon icon={faMapMarkerAlt} className="text-muted me-2 mt-1" size="sm" />
+                            <small className="text-muted" style={{ lineHeight: 1.4 }}>
+                              {order.shipping_address.length > 50 
+                                ? `${order.shipping_address.substring(0, 50)}...` 
+                                : order.shipping_address}
+                            </small>
+                          </div>
+                        )}
+                        {order.tracking_number && (
+                          <div className="d-flex align-items-center">
+                            <FontAwesomeIcon icon={faTruck} className="text-info me-2" size="sm" />
+                            <small className="text-info fw-semibold">
+                              Resi: {order.tracking_number}
+                            </small>
+                          </div>
+                        )}
+                      </div>
+                    </Col>
+                    
+                    <Col lg={2} md={12} className="text-lg-end text-center">
+                      <div className="d-flex gap-2 justify-content-lg-end justify-content-center">
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={() => handleViewDetails(order)}
+                          className="px-3 rounded-pill"
+                        >
+                          <FontAwesomeIcon icon={faEye} className="me-1" />
+                          Detail
+                        </Button>
+                        <Button
+                          variant="outline-info"
+                          size="sm"
+                          onClick={() => handleViewPaymentInfo(order)}
+                          className="px-3 rounded-pill"
+                        >
+                          <FontAwesomeIcon icon={faCreditCard} className="me-1" />
+                          Bayar
+                        </Button>
+                      </div>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+            </div>
+          ))}
+        </div>
       )}
       
       {/* Order Details Modal */}
