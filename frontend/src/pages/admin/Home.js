@@ -234,7 +234,7 @@ const Home = ({ data, loading }) => {
       
       {/* Summary Cards */}
       <Row>
-        <Col md={3} className="mb-4">
+        <Col md={4} className="mb-4">
           <Card className="admin-stat-card h-100">
             <Card.Body>
               <div className="d-flex justify-content-between align-items-center">
@@ -252,7 +252,7 @@ const Home = ({ data, loading }) => {
           </Card>
         </Col>
         
-        <Col md={3} className="mb-4">
+        <Col md={4} className="mb-4">
           <Card className="admin-stat-card h-100" style={{ background: 'linear-gradient(135deg, #28a745, #20c997)' }}>
             <Card.Body>
               <div className="d-flex justify-content-between align-items-center">
@@ -270,7 +270,7 @@ const Home = ({ data, loading }) => {
           </Card>
         </Col>
         
-        <Col md={3} className="mb-4">
+        <Col md={4} className="mb-4">
           <Card className="admin-stat-card h-100" style={{ background: 'linear-gradient(135deg, #17a2b8, #20c997)' }}>
             <Card.Body>
               <div className="d-flex justify-content-between align-items-center">
@@ -287,8 +287,11 @@ const Home = ({ data, loading }) => {
             </Card.Body>
           </Card>
         </Col>
-        
-        <Col md={3} className="mb-4">
+      </Row>
+
+      {/* Revenue Card */}
+      <Row>
+        <Col md={12} className="mb-4">
           <Card className="admin-stat-card h-100" style={{ background: 'linear-gradient(135deg, #ffc107, #fd7e14)' }}>
             <Card.Body>
               <div className="d-flex justify-content-between align-items-center">
