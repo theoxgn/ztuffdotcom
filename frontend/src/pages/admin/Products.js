@@ -329,6 +329,7 @@ const ProductForm = ({ mode = 'add' }) => {
   const [categories, setCategories] = useState([]);
   const [imagePreview, setImagePreview] = useState(null);
   const [variations, setVariations] = useState([]);
+  const [combinations, setCombinations] = useState([]);
   const [showVariationModal, setShowVariationModal] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -535,6 +536,82 @@ const ProductForm = ({ mode = 'add' }) => {
 
   const removeVariation = (index) => {
     setVariations(prev => prev.filter((_, i) => i !== index));
+    setCombinations([]); // Reset combinations when variations change
+  };
+
+  // Generate all possible combinations
+  const generateCombinations = () => {
+    if (variations.length === 0) return;
+    
+    // Validate stock is filled
+    if (!formData.stock || parseInt(formData.stock) <= 0) {
+      setError('Harap isi stok produk terlebih dahulu sebelum generate kombinasi');
+      return;
+    }
+
+    const generateCartesianProduct = (arrays) => {
+      return arrays.reduce((acc, curr) => {
+        const result = [];
+        acc.forEach(accItem => {
+          curr.forEach(currItem => {
+            result.push([...accItem, currItem]);
+          });
+        });
+        return result;
+      }, [[]]);
+    };
+
+    // Create arrays for cartesian product
+    const variationArrays = variations.map(variation => 
+      variation.values.map(value => ({
+        type: variation.type,
+        name: variation.name,
+        value: value
+      }))
+    );
+
+    // Generate combinations
+    const combos = generateCartesianProduct(variationArrays);
+    
+    // Calculate stock distribution
+    const totalStock = parseInt(formData.stock) || 0;
+    const totalCombinations = combos.length;
+    
+    // Distribute stock evenly and round down to ensure no decimals
+    const stockPerCombination = totalCombinations > 0 ? Math.floor(totalStock / totalCombinations) : 0;
+    
+    // Calculate remaining stock after even distribution
+    const remainingStock = totalStock - (stockPerCombination * totalCombinations);
+    
+    // Format combinations
+    const formattedCombos = combos.map((combo, index) => {
+      const values = {};
+      combo.forEach(item => {
+        values[item.type] = item.value;
+      });
+
+      // Add 1 extra stock to first combinations if there's remaining stock
+      const stockForThisCombination = stockPerCombination + (index < remainingStock ? 1 : 0);
+
+      return {
+        id: index,
+        values: values,
+        price: formData.price || '',
+        stock: stockForThisCombination.toString(),
+        is_active: true,
+        combination_string: combo.map(item => item.value).join(' + ')
+      };
+    });
+
+    setCombinations(formattedCombos);
+    setError(null); // Clear any previous errors
+  };
+
+  // Update specific combination
+  const updateCombination = (index, field, value) => {
+    setCombinations(prev => prev.map((combo, i) => 
+      i === index ? { ...combo, [field]: value } : combo
+    ));
   };
 
   const handleSubmit = async (e) => {
@@ -580,8 +657,10 @@ const ProductForm = ({ mode = 'add' }) => {
         }
       });
 
-      // Append variations
-      if (variations.length > 0) {
+      // Append variations or combinations
+      if (combinations.length > 0) {
+        submitData.append('combinations', JSON.stringify(combinations));
+      } else if (variations.length > 0) {
         submitData.append('variations', JSON.stringify(variations));
       }
 
@@ -686,6 +765,18 @@ const ProductForm = ({ mode = 'add' }) => {
                         required
                         placeholder="0"
                       />
+                      {variations.length > 1 && formData.stock && (
+                        <Form.Text className="text-muted">
+                          <small>
+                            {(() => {
+                              const totalCombinations = variations.reduce((total, variation) => total * variation.values.length, 1);
+                              const stockPerCombo = Math.floor(parseInt(formData.stock) / totalCombinations);
+                              const remaining = parseInt(formData.stock) % totalCombinations;
+                              return `Akan dibagi ke ${totalCombinations} kombinasi: ${stockPerCombo} per kombinasi${remaining > 0 ? ` (+${remaining} ekstra untuk ${remaining} kombinasi pertama)` : ''}`;
+                            })()}
+                          </small>
+                        </Form.Text>
+                      )}
                     </Form.Group>
                   </Col>
                   <Col md={4}>
@@ -752,42 +843,131 @@ const ProductForm = ({ mode = 'add' }) => {
                   <Card.Header>
                     <div className="d-flex justify-content-between align-items-center">
                       <h6 className="mb-0">Variasi Produk</h6>
-                      <Button 
-                        variant="outline-primary" 
-                        size="sm"
-                        className="px-3 py-2 fw-semibold"
-                        onClick={() => setShowVariationModal(true)}
-                      >
-                        <FontAwesomeIcon icon={faPlus} className="me-1" />
-                        Tambah Variasi
-                      </Button>
+                      <div className="d-flex gap-2">
+                        <Button 
+                          variant="outline-primary" 
+                          size="sm"
+                          className="px-3 py-2 fw-semibold"
+                          onClick={() => setShowVariationModal(true)}
+                        >
+                          <FontAwesomeIcon icon={faPlus} className="me-1" />
+                          Tambah Variasi
+                        </Button>
+                        {variations.length > 1 && (
+                          <Button 
+                            variant="outline-success" 
+                            size="sm"
+                            className="px-3 py-2 fw-semibold"
+                            onClick={generateCombinations}
+                            title={(() => {
+                              if (!formData.stock) return `Generate kombinasi dari ${variations.length} variasi (Isi stok terlebih dahulu)`;
+                              const totalCombinations = variations.reduce((total, variation) => total * variation.values.length, 1);
+                              return `Generate ${totalCombinations} kombinasi dari ${variations.length} variasi (Stok ${formData.stock} akan dibagi rata)`;
+                            })()}
+                          >
+                            <FontAwesomeIcon icon={faEdit} className="me-1" />
+                            Generate Kombinasi
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </Card.Header>
                   <Card.Body>
                     {variations.length === 0 ? (
                       <p className="text-muted mb-0">Belum ada variasi produk</p>
                     ) : (
-                      variations.map((variation, index) => (
-                        <div key={index} className="border rounded p-3 mb-2">
-                          <div className="d-flex justify-content-between align-items-start">
-                            <div>
-                              <h6>{variation.name} ({variation.type})</h6>
-                              <div className="d-flex flex-wrap gap-1">
-                                {variation.values.map((value, i) => (
-                                  <Badge key={i} bg="secondary">{value}</Badge>
-                                ))}
+                      <>
+                        {/* Display variation types */}
+                        <div className="mb-3">
+                          <h6>Tipe Variasi:</h6>
+                          {variations.map((variation, index) => (
+                            <div key={index} className="border rounded p-3 mb-2">
+                              <div className="d-flex justify-content-between align-items-start">
+                                <div>
+                                  <h6>{variation.name} ({variation.type})</h6>
+                                  <div className="d-flex flex-wrap gap-1">
+                                    {variation.values.map((value, i) => (
+                                      <Badge key={i} bg="secondary">{value}</Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                                <Button 
+                                  variant="outline-danger" 
+                                  size="sm"
+                                  onClick={() => removeVariation(index)}
+                                >
+                                  <FontAwesomeIcon icon={faTrash} />
+                                </Button>
                               </div>
                             </div>
-                            <Button 
-                              variant="outline-danger" 
-                              size="sm"
-                              onClick={() => removeVariation(index)}
-                            >
-                              <FontAwesomeIcon icon={faTrash} />
-                            </Button>
-                          </div>
+                          ))}
                         </div>
-                      ))
+
+                        {/* Display combinations if exists */}
+                        {combinations.length > 0 && (
+                          <div>
+                            <div className="d-flex justify-content-between align-items-center mb-2">
+                              <h6 className="mb-0">Kombinasi Variasi ({combinations.length} kombinasi):</h6>
+                              {formData.stock && (
+                                <small className="text-muted">
+                                  Stok total: {formData.stock} → {Math.floor(parseInt(formData.stock) / combinations.length)} per kombinasi
+                                  {parseInt(formData.stock) % combinations.length > 0 && (
+                                    <span className="text-info"> (+{parseInt(formData.stock) % combinations.length} ekstra untuk {parseInt(formData.stock) % combinations.length} kombinasi pertama)</span>
+                                  )}
+                                </small>
+                              )}
+                            </div>
+                            <div className="table-responsive" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                              <Table size="sm" bordered>
+                                <thead>
+                                  <tr>
+                                    {variations.map((v, i) => (
+                                      <th key={i}>{v.name}</th>
+                                    ))}
+                                    <th>Harga</th>
+                                    <th>Stok</th>
+                                    <th>Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {combinations.map((combo, index) => (
+                                    <tr key={index}>
+                                      {variations.map((v, i) => (
+                                        <td key={i}>{combo.values[v.type] || '-'}</td>
+                                      ))}
+                                      <td>
+                                        <Form.Control
+                                          type="number"
+                                          size="sm"
+                                          value={combo.price || formData.price}
+                                          onChange={(e) => updateCombination(index, 'price', e.target.value)}
+                                          placeholder="Harga"
+                                        />
+                                      </td>
+                                      <td>
+                                        <Form.Control
+                                          type="number"
+                                          size="sm"
+                                          value={combo.stock || '0'}
+                                          onChange={(e) => updateCombination(index, 'stock', e.target.value)}
+                                          placeholder="Stok"
+                                        />
+                                      </td>
+                                      <td>
+                                        <Form.Check
+                                          type="switch"
+                                          checked={combo.is_active !== false}
+                                          onChange={(e) => updateCombination(index, 'is_active', e.target.checked)}
+                                        />
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </Table>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </Card.Body>
                 </Card>
