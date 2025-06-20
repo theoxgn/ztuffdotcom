@@ -17,6 +17,7 @@ const shippingRoutes = require('./shippingRoutes');
 const settingRoutes = require('./settingRoutes');
 const paymentRoutes = require('./paymentRoutes');
 const reviewRoutes = require('./reviewRoutes');
+const discountRoutes = require('./discountRoutes');
 
 // Define API routes
 router.use('/auth', authRoutes);
@@ -33,6 +34,7 @@ router.use('/wishlist', wishlistRoutes);
 router.use('/shipping', shippingRoutes);
 router.use('/settings', settingRoutes);
 router.use('/payment', paymentRoutes);
+router.use('/discounts', discountRoutes);
 router.use('/', reviewRoutes);
 
 // API health check

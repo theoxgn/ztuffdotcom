@@ -14,9 +14,13 @@ const getDashboardData = async (req, res) => {
     const userCount = await User.count();
     const productCount = await Product.count();
     const newOrderCount = await Order.count({ where: { status: 'pending' } });
-    const totalRevenue = await Order.sum('total', { where: { status: 'delivered' } }) || 0;
+    const { Op } = require('sequelize');
+    const totalRevenue = await Order.sum('total', { 
+      where: { status: { [Op.in]: ['paid', 'processing', 'shipped', 'delivered'] } } 
+    }) || 0;
     const categoryCount = await Category.count();
     const totalOrderCount = await Order.count();
+    
 
     // Recent orders (last 5)
     const recentOrders = await Order.findAll({

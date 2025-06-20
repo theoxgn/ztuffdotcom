@@ -146,6 +146,95 @@ export const CartProvider = ({ children }) => {
     }, 0);
   };
 
+  // Calculate item discount
+  const calculateItemDiscount = (item, discounts) => {
+    if (!item || !item.product || !discounts || discounts.length === 0) {
+      return { originalPrice: 0, discountedPrice: 0, discount: null };
+    }
+
+    const basePrice = item.variation ? 
+      (item.variation.price || item.product.price || 0) : 
+      (item.product.price || 0);
+
+    // Find applicable discounts for this product
+    const applicableDiscounts = discounts.filter(discount => {
+      if (discount.target_type === 'all') return true;
+      
+      if (discount.target_type === 'category') {
+        try {
+          const targetIds = JSON.parse(discount.target_ids || '[]');
+          return targetIds.includes(item.product.category_id);
+        } catch (e) {
+          return false;
+        }
+      }
+      
+      if (discount.target_type === 'product') {
+        try {
+          const targetIds = JSON.parse(discount.target_ids || '[]');
+          return targetIds.includes(item.product.id);
+        } catch (e) {
+          return false;
+        }
+      }
+      
+      return false;
+    });
+
+    if (applicableDiscounts.length === 0) {
+      return { originalPrice: basePrice, discountedPrice: basePrice, discount: null };
+    }
+
+    // Get the best discount (highest priority, then highest value)
+    const bestDiscount = applicableDiscounts.sort((a, b) => {
+      if (a.priority !== b.priority) return b.priority - a.priority;
+      return b.value - a.value;
+    })[0];
+
+    let discountAmount = 0;
+    
+    if (bestDiscount.type === 'percentage') {
+      discountAmount = (basePrice * bestDiscount.value) / 100;
+      if (bestDiscount.max_discount && discountAmount > bestDiscount.max_discount) {
+        discountAmount = bestDiscount.max_discount;
+      }
+    } else {
+      discountAmount = bestDiscount.value;
+    }
+    
+    const discountedPrice = Math.max(0, basePrice - discountAmount);
+    
+    return { 
+      originalPrice: basePrice, 
+      discountedPrice: discountedPrice, 
+      discount: bestDiscount,
+      discountAmount: discountAmount 
+    };
+  };
+
+  // Calculate total discount amount for all items
+  const getTotalDiscount = (discounts) => {
+    if (!discounts || discounts.length === 0) return 0;
+    
+    return cartItems.reduce((total, item) => {
+      const itemDiscount = calculateItemDiscount(item, discounts);
+      return total + (itemDiscount.discountAmount * item.quantity);
+    }, 0);
+  };
+
+  // Calculate subtotal with discounts applied
+  const getDiscountedSubtotal = (discounts) => {
+    if (!discounts || discounts.length === 0) return getSubtotal();
+    
+    return cartItems.reduce((total, item) => {
+      if (!item || !item.product) return total;
+      
+      const itemDiscount = calculateItemDiscount(item, discounts);
+      const quantity = item.quantity || 0;
+      return total + (itemDiscount.discountedPrice * quantity);
+    }, 0);
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -158,7 +247,10 @@ export const CartProvider = ({ children }) => {
         clearCart,
         fetchCartItems,
         getTotalItems,
-        getSubtotal
+        getSubtotal,
+        calculateItemDiscount,
+        getTotalDiscount,
+        getDiscountedSubtotal
       }}
     >
       {children}

@@ -39,9 +39,18 @@ const OrderItem = sequelize.define('OrderItem', {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
   },
+  original_price: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false
+  },
   total: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
+  },
+  discount_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0
   }
 });
 

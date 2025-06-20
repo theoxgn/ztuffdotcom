@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Table } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Table, Badge } from 'react-bootstrap';
 import { useNavigate, Link } from 'react-router-dom';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPercent } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import AuthContext from '../contexts/AuthContext';
 import CartContext from '../contexts/CartContext';
@@ -10,7 +12,7 @@ import { VoucherSelector } from '../components';
 
 const Checkout = () => {
   const { currentUser } = useContext(AuthContext);
-  const { cartItems, getSubtotal, clearCart } = useContext(CartContext);
+  const { cartItems, getSubtotal, clearCart, calculateItemDiscount, getTotalDiscount, getDiscountedSubtotal } = useContext(CartContext);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -30,6 +32,8 @@ const Checkout = () => {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [voucherData, setVoucherData] = useState(null);
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [productDiscounts, setProductDiscounts] = useState([]);
+  const [discountsLoading, setDiscountsLoading] = useState(false);
   const navigate = useNavigate();
 
   // Fetch payment methods and origin settings
@@ -54,6 +58,23 @@ const Checkout = () => {
     fetchData();
   }, []);
 
+  // Fetch active discounts
+  useEffect(() => {
+    const fetchActiveDiscounts = async () => {
+      try {
+        setDiscountsLoading(true);
+        const response = await axios.get('/api/discounts/active');
+        setProductDiscounts(response.data.data.discounts || []);
+      } catch (error) {
+        console.error('Error fetching discounts:', error);
+        setProductDiscounts([]);
+      } finally {
+        setDiscountsLoading(false);
+      }
+    };
+
+    fetchActiveDiscounts();
+  }, []);
 
   // Search destinations when query changes
   useEffect(() => {
@@ -176,8 +197,8 @@ const Checkout = () => {
 
   // Calculate final total with discount
   const getFinalTotal = () => {
-    const subtotal = getSubtotal();
-    return subtotal + shippingCost - discountAmount;
+    const discountedSubtotal = getDiscountedSubtotal(productDiscounts);
+    return discountedSubtotal + shippingCost - discountAmount;
   };
 
   // Validation schema
@@ -228,11 +249,17 @@ const Checkout = () => {
         total_weight: getTotalWeight(),
         destination_id: selectedDestination?.id || '',
         voucher_code: voucherData?.voucher_code || null,
-        items: cartItems.map(item => ({
-          product_id: item.product_id,
-          variation_id: item.variation_id || null,
-          quantity: item.quantity
-        }))
+        product_discount_amount: getTotalDiscount(productDiscounts),
+        items: cartItems.map(item => {
+          const itemDiscount = calculateItemDiscount(item, productDiscounts);
+          return {
+            product_id: item.product_id,
+            variation_id: item.variation_id || null,
+            quantity: item.quantity,
+            discount_amount: itemDiscount.discountAmount,
+            discount_id: itemDiscount.discount?.id || null
+          };
+        })
       };
       
       // Create Midtrans snap token
@@ -669,29 +696,75 @@ const Checkout = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {cartItems.map(item => (
-                    <tr key={item.id}>
-                      <td>
-                        {item.product?.name} x {item.quantity}
-                        {item.variation && (
-                          <small className="d-block text-muted">
-                            {item.variation.size && item.variation.color ? 
-                              `${item.variation.size} - ${item.variation.color}` : ''}
-                          </small>
-                        )}
-                      </td>
-                      <td className="text-end">
-                        Rp {((item.variation?.price || item.product?.price) * item.quantity).toLocaleString('id-ID')}
-                      </td>
-                    </tr>
-                  ))}
+                  {cartItems.map(item => {
+                    const itemDiscount = calculateItemDiscount(item, productDiscounts);
+                    return (
+                      <tr key={item.id}>
+                        <td>
+                          {item.product?.name} x {item.quantity}
+                          {item.variation && (
+                            <small className="d-block text-muted">
+                              {item.variation.size && item.variation.color ? 
+                                `${item.variation.size} - ${item.variation.color}` : ''}
+                            </small>
+                          )}
+                          {itemDiscount.discount && (
+                            <div className="mt-1">
+                              <Badge bg="danger" size="sm">
+                                <FontAwesomeIcon icon={faPercent} className="me-1" />
+                                {itemDiscount.discount.name}
+                              </Badge>
+                            </div>
+                          )}
+                        </td>
+                        <td className="text-end">
+                          {itemDiscount.discount ? (
+                            <div>
+                              <div className="text-primary fw-bold">
+                                Rp {(itemDiscount.discountedPrice * item.quantity).toLocaleString('id-ID')}
+                              </div>
+                              <small className="text-muted text-decoration-line-through">
+                                Rp {(itemDiscount.originalPrice * item.quantity).toLocaleString('id-ID')}
+                              </small>
+                            </div>
+                          ) : (
+                            <div>
+                              Rp {((item.variation?.price || item.product?.price) * item.quantity).toLocaleString('id-ID')}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </Table>
               
+              {/* Original Subtotal */}
               <div className="d-flex justify-content-between mb-2">
                 <span>Subtotal</span>
-                <span>Rp {getSubtotal().toLocaleString('id-ID')}</span>
+                <span className={getTotalDiscount(productDiscounts) > 0 ? "text-muted text-decoration-line-through" : ""}>
+                  Rp {getSubtotal().toLocaleString('id-ID')}
+                </span>
               </div>
+              
+              {/* Product Discount Information */}
+              {getTotalDiscount(productDiscounts) > 0 && (
+                <>
+                  <div className="d-flex justify-content-between mb-2 text-success">
+                    <span>
+                      <FontAwesomeIcon icon={faPercent} className="me-1" />
+                      Diskon Produk:
+                    </span>
+                    <span>-Rp {getTotalDiscount(productDiscounts).toLocaleString('id-ID')}</span>
+                  </div>
+                  <div className="d-flex justify-content-between mb-2">
+                    <span>Subtotal Setelah Diskon:</span>
+                    <span className="fw-bold text-primary">
+                      Rp {getDiscountedSubtotal(productDiscounts).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                </>
+              )}
               
               <div className="d-flex justify-content-between mb-2">
                 <span>
@@ -723,7 +796,7 @@ const Checkout = () => {
               <div className="mb-3">
                 <label className="form-label fw-bold">Voucher Diskon</label>
                 <VoucherSelector
-                  subtotal={getSubtotal()}
+                  subtotal={getDiscountedSubtotal(productDiscounts)}
                   onVoucherApplied={handleVoucherApplied}
                   onVoucherRemoved={handleVoucherRemoved}
                   disabled={loading}

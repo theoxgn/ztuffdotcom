@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Row, Col, Card, Button, Form, InputGroup, Spinner, Alert, Pagination } from 'react-bootstrap';
+import { Row, Col, Card, Button, Form, InputGroup, Spinner, Alert, Pagination, Badge } from 'react-bootstrap';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faFilter, faSortAmountDown, faSortAmountUp, faHeart, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faFilter, faSortAmountDown, faSortAmountUp, faHeart, faTimes, faPercent } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import WishlistContext from '../contexts/WishlistContext';
 import AuthContext from '../contexts/AuthContext';
@@ -24,6 +24,7 @@ const Products = () => {
   const [priceMax, setPriceMax] = useState(searchParams.get('max') || '');
   const [showFilters, setShowFilters] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState({});
+  const [productDiscounts, setProductDiscounts] = useState({});
 
   // Fetch products and categories
   useEffect(() => {
@@ -63,8 +64,58 @@ const Products = () => {
         
         // Fetch products
         const productsResponse = await axios.get(`/api/products?${params.toString()}`);
-        setProducts(Array.isArray(productsResponse.data.data.products) ? productsResponse.data.data.products : []);
+        const productsData = Array.isArray(productsResponse.data.data.products) ? productsResponse.data.data.products : [];
+        setProducts(productsData);
         setTotalPages(productsResponse.data.data.totalPages || 1);
+        
+        // Fetch active discounts
+        try {
+          const discountsResponse = await axios.get('/api/discounts/active');
+          const activeDiscounts = discountsResponse.data.data.discounts || [];
+          
+          // Create a map of product ID to best applicable discount
+          const discountMap = {};
+          productsData.forEach(product => {
+            const applicableDiscounts = activeDiscounts.filter(discount => {
+              if (discount.target_type === 'all') return true;
+              
+              if (discount.target_type === 'category') {
+                try {
+                  const targetIds = JSON.parse(discount.target_ids || '[]');
+                  return targetIds.includes(product.category_id);
+                } catch (e) {
+                  return false;
+                }
+              }
+              
+              if (discount.target_type === 'product') {
+                try {
+                  const targetIds = JSON.parse(discount.target_ids || '[]');
+                  return targetIds.includes(product.id);
+                } catch (e) {
+                  return false;
+                }
+              }
+              
+              return false;
+            });
+            
+            if (applicableDiscounts.length > 0) {
+              // Get the best discount (highest priority, then highest value)
+              const bestDiscount = applicableDiscounts.sort((a, b) => {
+                if (a.priority !== b.priority) return b.priority - a.priority;
+                return b.value - a.value;
+              })[0];
+              
+              discountMap[product.id] = bestDiscount;
+            }
+          });
+          
+          setProductDiscounts(discountMap);
+        } catch (discountError) {
+          console.error('Error fetching discounts:', discountError);
+          setProductDiscounts({});
+        }
         
         // Fetch categories (only once)
         if (categories.length === 0) {
@@ -83,6 +134,41 @@ const Products = () => {
 
     fetchData();
   }, [searchParams, categories.length]);
+
+  // Calculate discounted price for a product
+  const calculateDiscountedPrice = (product) => {
+    // Safety check
+    if (!product || !product.price) {
+      return { originalPrice: 0, discountedPrice: 0, discount: null };
+    }
+    
+    const discount = productDiscounts[product.id];
+    const basePrice = parseFloat(product.price);
+    
+    if (!discount) {
+      return { originalPrice: basePrice, discountedPrice: basePrice, discount: null };
+    }
+    
+    let discountAmount = 0;
+    
+    if (discount.type === 'percentage') {
+      discountAmount = (basePrice * discount.value) / 100;
+      if (discount.max_discount && discountAmount > discount.max_discount) {
+        discountAmount = discount.max_discount;
+      }
+    } else {
+      discountAmount = discount.value;
+    }
+    
+    const discountedPrice = Math.max(0, basePrice - discountAmount);
+    
+    return { 
+      originalPrice: basePrice, 
+      discountedPrice: discountedPrice, 
+      discount: discount,
+      discountAmount: discountAmount 
+    };
+  };
 
   // Handle search form submission
   const handleSearch = (e) => {
@@ -485,63 +571,91 @@ const Products = () => {
       ) : (
         <>
           <Row>
-            {products.map(product => (
-              <Col key={product.id} lg={3} md={4} sm={6} className="mb-4">
-                <Card className="h-100 shadow-sm product-card">
-                  <div className="product-image-container position-relative">
-                    <Card.Img 
-                      variant="top" 
-                      src={product.image ? `${process.env.REACT_APP_API_URL}${product.image}` : '/default.webp'} 
-                      alt={product.name}
-                      className="product-image"
-                      onError={(e) => { e.target.src = '/default.webp'; }}
-                      style={{ height: '250px', objectFit: 'cover' }}
-                    />
-                    <div className="position-absolute top-0 end-0 p-2">
-                      <Button
-                        variant={isInWishlist(product.id) ? "danger" : "light"}
-                        size="sm"
-                        className="rounded-circle border-0"
-                        style={{ width: '32px', height: '32px', padding: '0' }}
-                        onClick={() => handleWishlistToggle(product.id)}
-                        disabled={wishlistLoading[product.id]}
-                      >
-                        {wishlistLoading[product.id] ? (
-                          <Spinner animation="border" size="sm" />
-                        ) : (
-                          <FontAwesomeIcon 
-                            icon={faHeart} 
-                            className={isInWishlist(product.id) ? "text-white" : "text-danger"} 
-                          />
-                        )}
-                      </Button>
+            {products.map(product => {
+              const priceInfo = calculateDiscountedPrice(product);
+              
+              return (
+                <Col key={product.id} lg={3} md={4} sm={6} className="mb-4">
+                  <Card className="h-100 shadow-sm product-card">
+                    <div className="product-image-container position-relative">
+                      <Card.Img 
+                        variant="top" 
+                        src={product.image ? `${process.env.REACT_APP_API_URL}${product.image}` : '/default.webp'} 
+                        alt={product.name}
+                        className="product-image"
+                        onError={(e) => { e.target.src = '/default.webp'; }}
+                        style={{ height: '250px', objectFit: 'cover' }}
+                      />
+                      
+                      {/* Discount Badge */}
+                      {priceInfo.discount && (
+                        <div className="position-absolute top-0 start-0 p-2">
+                          <Badge bg="danger" className="rounded-pill">
+                            -{priceInfo.discount.type === 'percentage' ? `${priceInfo.discount.value}%` : `Rp ${priceInfo.discount.value.toLocaleString('id-ID')}`}
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      <div className="position-absolute top-0 end-0 p-2">
+                        <Button
+                          variant={isInWishlist(product.id) ? "danger" : "light"}
+                          size="sm"
+                          className="rounded-circle border-0"
+                          style={{ width: '32px', height: '32px', padding: '0' }}
+                          onClick={() => handleWishlistToggle(product.id)}
+                          disabled={wishlistLoading[product.id]}
+                        >
+                          {wishlistLoading[product.id] ? (
+                            <Spinner animation="border" size="sm" />
+                          ) : (
+                            <FontAwesomeIcon 
+                              icon={faHeart} 
+                              className={isInWishlist(product.id) ? "text-white" : "text-danger"} 
+                            />
+                          )}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <Card.Body className="d-flex flex-column">
-                    <Card.Title className="product-title">
-                      {product.name}
-                    </Card.Title>
-                    <div className="text-muted mb-2 small">
-                      {product.category?.name || 'Umum'}
-                    </div>
-                    <Card.Text className="text-primary fw-bold mb-0">
-                      Rp {parseFloat(product.price).toLocaleString('id-ID')}
-                    </Card.Text>
-                    <div className="mt-auto pt-3">
-                      <Button 
-                        as={Link} 
-                        to={`/products/${product.id}`} 
-                        variant="primary" 
-                        size="sm"
-                        className="w-100 py-2 fw-semibold rounded-pill"
-                      >
-                        Lihat Detail
-                      </Button>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
+                    <Card.Body className="d-flex flex-column">
+                      <Card.Title className="product-title">
+                        {product.name}
+                      </Card.Title>
+                      <div className="text-muted mb-2 small">
+                        {product.category?.name || 'Umum'}
+                      </div>
+                      
+                      {/* Price Display */}
+                      {priceInfo.discount ? (
+                        <div className="mb-1">
+                          <div className="text-primary fw-bold">
+                            Rp {priceInfo.discountedPrice.toLocaleString('id-ID')}
+                          </div>
+                          <small className="text-muted text-decoration-line-through">
+                            Rp {priceInfo.originalPrice.toLocaleString('id-ID')}
+                          </small>
+                        </div>
+                      ) : (
+                        <Card.Text className="text-primary fw-bold mb-1">
+                          Rp {priceInfo.originalPrice.toLocaleString('id-ID')}
+                        </Card.Text>
+                      )}
+                      
+                      <div className="mt-auto pt-3">
+                        <Button 
+                          as={Link} 
+                          to={`/products/${product.id}`} 
+                          variant="primary" 
+                          size="sm"
+                          className="w-100 py-2 fw-semibold rounded-pill"
+                        >
+                          Lihat Detail
+                        </Button>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              );
+            })}
           </Row>
           
           {/* Pagination */}

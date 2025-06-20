@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faHome, faUsers, faBoxes, faShoppingCart, 
-  faTag, faPercent, faBook, faCog
+  faTag, faPercent, faTicket, faBook, faCog
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
@@ -16,6 +16,7 @@ import AdminProducts from './Products';
 import AdminOrders from './Orders';
 import AdminCategories from './Categories';
 import AdminVouchers from './Vouchers';
+import AdminDiscounts from './Discounts';
 import AdminTutorials from './Tutorials';
 import AdminSettings from './Settings';
 
@@ -53,6 +54,7 @@ const Dashboard = () => {
     if (path.includes('/admin/orders')) return 'orders';
     if (path.includes('/admin/categories')) return 'categories';
     if (path.includes('/admin/vouchers')) return 'vouchers';
+    if (path.includes('/admin/discounts')) return 'discounts';
     if (path.includes('/admin/tutorials')) return 'tutorials';
     if (path.includes('/admin/settings')) return 'settings';
     return 'home';
@@ -65,6 +67,7 @@ const Dashboard = () => {
     { key: 'orders', path: '/admin/orders', icon: faShoppingCart, label: 'Pesanan' },
     { key: 'categories', path: '/admin/categories', icon: faTag, label: 'Kategori' },
     { key: 'vouchers', path: '/admin/vouchers', icon: faPercent, label: 'Voucher' },
+    { key: 'discounts', path: '/admin/discounts', icon: faTicket, label: 'Diskon' },
     { key: 'tutorials', path: '/admin/tutorials', icon: faBook, label: 'Tutorial' },
     { key: 'settings', path: '/admin/settings', icon: faCog, label: 'Settings' }
   ];
@@ -101,7 +104,7 @@ const Dashboard = () => {
           <Card className="admin-mobile-nav border-0">
             <Card.Body>
               <Nav className="justify-content-center">
-                {menuItems.slice(0, 4).map((item) => (
+                {menuItems.slice(0, 5).map((item) => (
                   <Nav.Link
                     key={item.key}
                     as={Link}
@@ -131,6 +134,7 @@ const Dashboard = () => {
               <Route path="/orders/*" element={<AdminOrders />} />
               <Route path="/categories" element={<AdminCategories />} />
               <Route path="/vouchers/*" element={<AdminVouchers />} />
+              <Route path="/discounts" element={<AdminDiscounts />} />
               <Route path="/tutorials/*" element={<AdminTutorials />} />
               <Route path="/settings" element={<AdminSettings />} />
             </Routes>

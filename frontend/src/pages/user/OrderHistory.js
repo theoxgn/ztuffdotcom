@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Card, Table, Badge, Button, Spinner, Alert, Tabs, Tab, Modal, Form, Row, Col, Container } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faCreditCard, faShoppingBag, faCalendarAlt, faMapMarkerAlt, faTruck, faCheckCircle, faTimesCircle, faClock, faBox, faSync } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faCreditCard, faShoppingBag, faCalendarAlt, faMapMarkerAlt, faTruck, faCheckCircle, faTimesCircle, faClock, faBox, faSync, faPercent } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import AuthContext from '../../contexts/AuthContext';
 import { PaymentInfo } from '../../components';
@@ -532,6 +532,15 @@ const OrderHistory = () => {
                           <span>Biaya Pengiriman:</span>
                           <span className="fw-semibold">Rp {parseFloat(orderDetails.shipping_cost).toLocaleString('id-ID')}</span>
                         </div>
+                        {orderDetails.product_discount_amount > 0 && (
+                          <div className="d-flex justify-content-between mb-2 text-success">
+                            <span>
+                              <FontAwesomeIcon icon={faPercent} className="me-1" />
+                              Diskon Produk:
+                            </span>
+                            <span className="fw-bold">-Rp {parseFloat(orderDetails.product_discount_amount).toLocaleString('id-ID')}</span>
+                          </div>
+                        )}
                         {orderDetails.discount_amount > 0 && (
                           <div className="d-flex justify-content-between mb-2 text-success">
                             <div>

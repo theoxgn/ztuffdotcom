@@ -306,7 +306,7 @@ const Home = ({ data, loading }) => {
           </Card>
         </Col>
       </Row>
-      
+
       {/* Recent Orders and Sales Chart */}
       <Row>
         <Col lg={8} className="mb-4">

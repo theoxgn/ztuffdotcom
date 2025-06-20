@@ -67,6 +67,11 @@ const Order = sequelize.define('Order', {
     allowNull: false,
     defaultValue: 0
   },
+  product_discount_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0
+  },
   shipping_address: {
     type: DataTypes.TEXT,
     allowNull: false

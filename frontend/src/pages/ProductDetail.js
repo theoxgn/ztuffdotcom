@@ -10,7 +10,8 @@ import {
   faStar, 
   faShieldAlt, 
   faTruck, 
-  faUndo 
+  faUndo,
+  faPercent 
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import CartContext from '../contexts/CartContext';
@@ -39,6 +40,8 @@ const ProductDetail = () => {
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewStats, setReviewStats] = useState(null);
+  const [discounts, setDiscounts] = useState([]);
+  const [discountsLoading, setDiscountsLoading] = useState(false);
 
   // Fetch product data
   useEffect(() => {
@@ -100,6 +103,29 @@ const ProductDetail = () => {
     fetchRelatedProducts();
   }, [product]);
 
+  // Fetch product discounts
+  useEffect(() => {
+    const fetchProductDiscounts = async () => {
+      if (!product) return;
+      
+      try {
+        setDiscountsLoading(true);
+        
+        const response = await axios.get(`/api/discounts/product/${product.id}`);
+        const discountsData = response.data.data.discounts || [];
+        
+        setDiscounts(discountsData);
+      } catch (error) {
+        console.error('Error fetching product discounts:', error);
+        setDiscounts([]);
+      } finally {
+        setDiscountsLoading(false);
+      }
+    };
+
+    fetchProductDiscounts();
+  }, [product]);
+
   // Handle size change
   const handleSizeChange = (e) => {
     const size = e.target.value;
@@ -149,6 +175,44 @@ const ProductDetail = () => {
   // Get unique sizes and colors
   const sizes = [...new Set(variations.map(v => v.size).filter(Boolean))];
   const colors = [...new Set(variations.map(v => v.color).filter(Boolean))];
+
+  // Calculate discounted price
+  const calculateDiscountedPrice = () => {
+    // Return default values if product is not loaded yet
+    if (!product) {
+      return { originalPrice: 0, discountedPrice: 0, discount: null };
+    }
+    
+    const basePrice = parseFloat(selectedVariation?.price || product.price);
+    
+    if (discounts.length === 0) {
+      return { originalPrice: basePrice, discountedPrice: basePrice, discount: null };
+    }
+    
+    // Get the best discount (highest priority, then highest value)
+    const bestDiscount = discounts[0];
+    let discountAmount = 0;
+    
+    if (bestDiscount.type === 'percentage') {
+      discountAmount = (basePrice * bestDiscount.value) / 100;
+      if (bestDiscount.max_discount && discountAmount > bestDiscount.max_discount) {
+        discountAmount = bestDiscount.max_discount;
+      }
+    } else {
+      discountAmount = bestDiscount.value;
+    }
+    
+    const discountedPrice = Math.max(0, basePrice - discountAmount);
+    
+    return { 
+      originalPrice: basePrice, 
+      discountedPrice: discountedPrice, 
+      discount: bestDiscount,
+      discountAmount: discountAmount 
+    };
+  };
+
+  const priceInfo = calculateDiscountedPrice();
 
   // Handle wishlist toggle
   const handleWishlistToggle = async () => {
@@ -314,9 +378,30 @@ const ProductDetail = () => {
               <h1 className="mb-3">{product.name}</h1>
               
               <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="text-primary fw-bold mb-0">
-                  Rp {parseFloat(selectedVariation?.price || product.price).toLocaleString('id-ID')}
-                </h2>
+                <div>
+                  {priceInfo.discount ? (
+                    <div>
+                      <h3 className="text-primary fw-bold mb-1">
+                        Rp {priceInfo.discountedPrice.toLocaleString('id-ID')}
+                      </h3>
+                      <div className="d-flex align-items-center">
+                        <span className="text-muted text-decoration-line-through me-2">
+                          Rp {priceInfo.originalPrice.toLocaleString('id-ID')}
+                        </span>
+                        <Badge bg="danger" className="rounded-pill">
+                          -{priceInfo.discount.type === 'percentage' ? `${priceInfo.discount.value}%` : `Rp ${priceInfo.discount.value.toLocaleString('id-ID')}`}
+                        </Badge>
+                      </div>
+                      <small className="text-success">
+                        Hemat Rp {priceInfo.discountAmount.toLocaleString('id-ID')}
+                      </small>
+                    </div>
+                  ) : (
+                    <h2 className="text-primary fw-bold mb-0">
+                      Rp {priceInfo.originalPrice.toLocaleString('id-ID')}
+                    </h2>
+                  )}
+                </div>
                 {reviewStats && reviewStats.totalReviews > 0 && (
                   <div className="d-flex align-items-center">
                     <div className="d-flex align-items-center me-2">
@@ -343,6 +428,26 @@ const ProductDetail = () => {
                   <Badge bg="danger" className="rounded-pill px-3 py-2">Out of Stock</Badge>
                 )}
               </div>
+
+              {/* Active Discounts */}
+              {discounts.length > 0 && (
+                <div className="mb-4">
+                  <h6 className="fw-bold mb-2">🔥 Promo Aktif</h6>
+                  {discounts.map((discount) => (
+                    <div key={discount.id} className="discount-badge mb-2">
+                      <Badge bg="warning" className="rounded-pill px-3 py-2 me-2">
+                        <FontAwesomeIcon icon={faPercent} className="me-1" />
+                        {discount.name}
+                      </Badge>
+                      {discount.description && (
+                        <small className="text-muted d-block mt-1">
+                          {discount.description}
+                        </small>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
               
               <div className="product-description mb-4">
                 <p className="text-muted">{product.description?.replace(/<[^>]*>/g, '').substring(0, 200)}...</p>

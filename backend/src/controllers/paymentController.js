@@ -150,7 +150,8 @@ class PaymentController {
         total_weight,
         notes,
         items,
-        voucher_code
+        voucher_code,
+        product_discount_amount
       } = req.body;
 
       const userId = req.user.id;
@@ -182,10 +183,14 @@ class PaymentController {
         }
         
         if (price && product) {
-          subtotal += price * item.quantity;
+          // Use discounted price if discount_amount is provided
+          const discountedPrice = item.discount_amount ? (price - item.discount_amount) : price;
+          const finalPrice = Math.max(0, discountedPrice);
+          
+          subtotal += finalPrice * item.quantity;
           itemDetails.push({
             id: item.product_id,
-            price: Math.round(price),
+            price: Math.round(price), // Use original price for Midtrans item detail
             quantity: item.quantity,
             name: productName
           });
@@ -297,11 +302,17 @@ class PaymentController {
             quantity: 1,
             name: `Shipping (${courier_name} - ${courier_service})`
           },
+          ...(product_discount_amount > 0 ? [{
+            id: 'product_discount',
+            price: -Math.round(product_discount_amount),
+            quantity: 1,
+            name: 'Product Discount'
+          }] : []),
           ...(discountAmount > 0 ? [{
-            id: 'discount',
+            id: 'voucher_discount',
             price: -Math.round(discountAmount),
             quantity: 1,
-            name: `Discount (${voucher_code})`
+            name: `Voucher Discount (${voucher_code})`
           }] : [])
         ],
         callbacks: {
@@ -323,6 +334,7 @@ class PaymentController {
         total: total,
         shipping_cost: shipping_cost,
         discount_amount: discountAmount,
+        product_discount_amount: product_discount_amount || 0,
         voucher_id: voucher ? voucher.id : null,
         voucher_code: voucher_code || null,
         shipping_address,
@@ -388,6 +400,7 @@ class PaymentController {
           payment_date: paymentDate,
           payment_type: paymentData.payment_type,
           payment_info: paymentData.payment_info,
+          product_discount_amount: order_data.product_discount_amount || 0,
           midtrans_order_id: paymentData.midtrans_order_id,
           midtrans_transaction_id: paymentData.midtrans_transaction_id,
           midtrans_transaction_status: paymentData.midtrans_transaction_status
@@ -418,15 +431,20 @@ class PaymentController {
               }
             }
             
-            const total = price * item.quantity;
+            // Use discounted price if discount_amount is provided
+            const discountedPrice = item.discount_amount ? (price - item.discount_amount) : price;
+            const finalPrice = Math.max(0, discountedPrice);
+            const total = finalPrice * item.quantity;
             
             await OrderItem.create({
               order_id: existingOrder.id,
               product_id: item.product_id,
               variation_id: item.variation_id || null,
               quantity: item.quantity,
-              price: price,
-              total: total
+              price: finalPrice,
+              original_price: price,
+              total: total,
+              discount_amount: item.discount_amount || 0
             });
           }
         }
@@ -456,6 +474,7 @@ class PaymentController {
         shipping_cost: order_data.shipping_cost,
         total_weight: order_data.total_weight,
         discount_amount: order_data.discount_amount || 0,
+        product_discount_amount: order_data.product_discount_amount || 0,
         voucher_id: order_data.voucher_id || null,
         shipping_address: order_data.shipping_address,
         shipping_city: order_data.shipping_city,
@@ -502,15 +521,20 @@ class PaymentController {
           }
         }
         
-        const total = price * item.quantity;
+        // Use discounted price if discount_amount is provided
+        const discountedPrice = item.discount_amount ? (price - item.discount_amount) : price;
+        const finalPrice = Math.max(0, discountedPrice);
+        const total = finalPrice * item.quantity;
         
         await OrderItem.create({
           order_id: order.id,
           product_id: item.product_id,
           variation_id: item.variation_id || null,
           quantity: item.quantity,
-          price: price,
-          total: total
+          price: finalPrice,
+          original_price: price,
+          total: total,
+          discount_amount: item.discount_amount || 0
         });
       }
 

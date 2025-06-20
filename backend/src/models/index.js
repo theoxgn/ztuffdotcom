@@ -16,6 +16,7 @@ const Tutorial = require('./Tutorial');
 const Wishlist = require('./Wishlist');
 const Setting = require('./Setting');
 const Review = require('./Review');
+const Discount = require('./Discount');
 
 // Define associations
 
@@ -112,5 +113,6 @@ module.exports = {
   Tutorial,
   Wishlist,
   Setting,
-  Review
+  Review,
+  Discount
 }; 

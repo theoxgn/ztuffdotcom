@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { Card, Table, Button, Badge, Spinner, Alert, Form, InputGroup, Row, Col, Modal, Tab, Tabs } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faSearch, faFilter, faArrowLeft, faEdit, faCheck, faTimes, faShippingFast, faFileInvoice, faPrint, faComments, faCreditCard } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faSearch, faFilter, faArrowLeft, faEdit, faCheck, faTimes, faShippingFast, faFileInvoice, faPrint, faComments, faCreditCard, faPercent } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { PaymentInfo } from '../../components';
 
@@ -693,6 +693,12 @@ const OrderDetail = () => {
                 <span class="total-label">Ongkos Kirim:</span>
                 <span>${formatCurrency(order?.shipping_cost)}</span>
               </div>
+              ${order?.product_discount_amount > 0 ? `
+              <div class="total-row">
+                <span class="total-label">Diskon Produk:</span>
+                <span style="color: #dc3545;">-${formatCurrency(order?.product_discount_amount)}</span>
+              </div>
+              ` : ''}
               ${order?.discount_amount > 0 ? `
               <div class="total-row">
                 <span class="total-label">Diskon Voucher${order?.voucher ? ` (${order.voucher.code})` : ''}:</span>
@@ -834,10 +840,29 @@ const OrderDetail = () => {
                                 {item.variation && (
                                   <div><small className="text-muted">Variasi: {item.variation}</small></div>
                                 )}
+                                {item.discount_amount > 0 && (
+                                  <div>
+                                    <Badge bg="danger" size="sm">
+                                      <FontAwesomeIcon icon={faPercent} className="me-1" />
+                                      Diskon: {formatCurrency(item.discount_amount)}
+                                    </Badge>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>
-                          <td>{formatCurrency(item.price)}</td>
+                          <td>
+                            {item.discount_amount > 0 ? (
+                              <div>
+                                <div className="text-primary fw-bold">{formatCurrency(item.price)}</div>
+                                <small className="text-muted text-decoration-line-through">
+                                  {formatCurrency(item.original_price || (parseFloat(item.price) + parseFloat(item.discount_amount)))}
+                                </small>
+                              </div>
+                            ) : (
+                              formatCurrency(item.price)
+                            )}
+                          </td>
                           <td>{item.quantity}</td>
                           <td>{formatCurrency(item.price * item.quantity)}</td>
                         </tr>
@@ -852,6 +877,15 @@ const OrderDetail = () => {
                         <tr>
                           <th colSpan="3">Ongkos Kirim</th>
                           <th>{formatCurrency(order?.shipping_cost)}</th>
+                        </tr>
+                      )}
+                      {order?.product_discount_amount > 0 && (
+                        <tr>
+                          <th colSpan="3">
+                            <FontAwesomeIcon icon={faPercent} className="me-2" />
+                            Diskon Produk
+                          </th>
+                          <th>-{formatCurrency(order?.product_discount_amount)}</th>
                         </tr>
                       )}
                       {order?.discount_amount > 0 && (

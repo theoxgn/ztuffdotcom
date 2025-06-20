@@ -1,17 +1,20 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Table, Button, Card, Row, Col, Form, Spinner, Alert } from 'react-bootstrap';
+import { Table, Button, Card, Row, Col, Form, Spinner, Alert, Badge } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faShoppingCart, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faShoppingCart, faArrowLeft, faPercent } from '@fortawesome/free-solid-svg-icons';
+import axios from 'axios';
 import CartContext from '../contexts/CartContext';
 import AuthContext from '../contexts/AuthContext';
 
 const Cart = () => {
-  const { cartItems, loading, error, removeFromCart, updateCartItem, getSubtotal } = useContext(CartContext);
+  const { cartItems, loading, error, removeFromCart, updateCartItem, getSubtotal, calculateItemDiscount, getTotalDiscount, getDiscountedSubtotal } = useContext(CartContext);
   const { currentUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const [groupedItems, setGroupedItems] = useState({});
   const [processingItem, setProcessingItem] = useState(null);
+  const [discounts, setDiscounts] = useState([]);
+  const [discountsLoading, setDiscountsLoading] = useState(false);
 
   // Group cart items by category
   useEffect(() => {
@@ -32,6 +35,24 @@ const Cart = () => {
     
     setGroupedItems(grouped);
   }, [cartItems]);
+
+  // Fetch active discounts
+  useEffect(() => {
+    const fetchActiveDiscounts = async () => {
+      try {
+        setDiscountsLoading(true);
+        const response = await axios.get('/api/discounts/active');
+        setDiscounts(response.data.data.discounts || []);
+      } catch (error) {
+        console.error('Error fetching discounts:', error);
+        setDiscounts([]);
+      } finally {
+        setDiscountsLoading(false);
+      }
+    };
+
+    fetchActiveDiscounts();
+  }, []);
 
   // Handle quantity change
   const handleQuantityChange = async (cartId, quantity) => {
@@ -138,6 +159,7 @@ const Cart = () => {
                 <tbody>
                   {items.map((item) => {
                     const itemPrice = getItemPrice(item);
+                    const itemDiscount = calculateItemDiscount(item, discounts);
                     return (
                       <tr key={item.id}>
                         <td>
@@ -157,10 +179,31 @@ const Cart = () => {
                                     `${item.variation.size} - ${item.variation.color}` : ''}
                                 </small>
                               )}
+                              {itemDiscount.discount && (
+                                <div className="mt-1">
+                                  <Badge bg="danger" className="rounded-pill">
+                                    <FontAwesomeIcon icon={faPercent} className="me-1" />
+                                    {itemDiscount.discount.name}
+                                  </Badge>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>
-                        <td>Rp {parseFloat(itemPrice).toLocaleString('id-ID')}</td>
+                        <td>
+                          {itemDiscount.discount ? (
+                            <div>
+                              <div className="text-primary fw-bold">
+                                Rp {itemDiscount.discountedPrice.toLocaleString('id-ID')}
+                              </div>
+                              <small className="text-muted text-decoration-line-through">
+                                Rp {itemDiscount.originalPrice.toLocaleString('id-ID')}
+                              </small>
+                            </div>
+                          ) : (
+                            <div>Rp {parseFloat(itemPrice).toLocaleString('id-ID')}</div>
+                          )}
+                        </td>
                         <td style={{ width: '120px' }}>
                           <Form.Control
                             type="number"
@@ -171,7 +214,20 @@ const Cart = () => {
                             size="sm"
                           />
                         </td>
-                        <td>Rp {(parseFloat(itemPrice) * item.quantity).toLocaleString('id-ID')}</td>
+                        <td>
+                          {itemDiscount.discount ? (
+                            <div>
+                              <div className="text-primary fw-bold">
+                                Rp {(itemDiscount.discountedPrice * item.quantity).toLocaleString('id-ID')}
+                              </div>
+                              <small className="text-muted text-decoration-line-through">
+                                Rp {(itemDiscount.originalPrice * item.quantity).toLocaleString('id-ID')}
+                              </small>
+                            </div>
+                          ) : (
+                            <div>Rp {(parseFloat(itemPrice) * item.quantity).toLocaleString('id-ID')}</div>
+                          )}
+                        </td>
                         <td>
                           <Button 
                             variant="danger" 
@@ -221,10 +277,47 @@ const Cart = () => {
                 <span>Total Produk:</span>
                 <span>{cartItems.length} item</span>
               </div>
-              <div className="d-flex justify-content-between">
-                <span>Total Harga:</span>
-                <span className="fw-bold">Rp {getSubtotal().toLocaleString('id-ID')}</span>
+              
+              {/* Original Subtotal */}
+              <div className="d-flex justify-content-between mb-2">
+                <span>Subtotal:</span>
+                <span className={getTotalDiscount(discounts) > 0 ? "text-muted text-decoration-line-through" : "fw-bold"}>
+                  Rp {getSubtotal().toLocaleString('id-ID')}
+                </span>
               </div>
+              
+              {/* Discount Information */}
+              {getTotalDiscount(discounts) > 0 && (
+                <>
+                  <div className="d-flex justify-content-between mb-2 text-success">
+                    <span>
+                      <FontAwesomeIcon icon={faPercent} className="me-1" />
+                      Total Diskon:
+                    </span>
+                    <span>-Rp {getTotalDiscount(discounts).toLocaleString('id-ID')}</span>
+                  </div>
+                  <hr />
+                  <div className="d-flex justify-content-between mb-2">
+                    <span className="fw-bold">Total Setelah Diskon:</span>
+                    <span className="fw-bold text-primary">
+                      Rp {getDiscountedSubtotal(discounts).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <small className="text-success">
+                      🎉 Anda hemat Rp {getTotalDiscount(discounts).toLocaleString('id-ID')}!
+                    </small>
+                  </div>
+                </>
+              )}
+              
+              {!getTotalDiscount(discounts) && (
+                <div className="d-flex justify-content-between">
+                  <span className="fw-bold">Total Harga:</span>
+                  <span className="fw-bold">Rp {getSubtotal().toLocaleString('id-ID')}</span>
+                </div>
+              )}
+              
               <div className="d-grid mt-3">
                 <Button 
                   as={Link} 
