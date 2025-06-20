@@ -35,6 +35,11 @@ const ProductVariation = sequelize.define('ProductVariation', {
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  combination_string: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Human readable combination string (e.g., "Merah + S")'
   }
 });
 

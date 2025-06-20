@@ -517,9 +517,17 @@ const createProduct = async (req, res) => {
       productData.image = `/uploads/products/${req.file.filename}`;
     }
 
-    // Parse variations if present
+    // Parse combinations or variations if present
+    let combinations = [];
     let variations = [];
-    if (productData.variations) {
+    
+    if (productData.combinations) {
+      try {
+        combinations = JSON.parse(productData.combinations);
+      } catch (e) {
+        console.error('Error parsing combinations:', e);
+      }
+    } else if (productData.variations) {
       try {
         variations = JSON.parse(productData.variations);
       } catch (e) {
@@ -527,13 +535,44 @@ const createProduct = async (req, res) => {
       }
     }
 
-    // Remove variations from productData as it's not a Product field
+    // Remove from productData as they're not Product fields
+    delete productData.combinations;
     delete productData.variations;
 
     const product = await Product.create(productData);
     
-    // Create variations if provided
-    if (variations.length > 0) {
+    // Create combinations if provided (preferred method)
+    if (combinations.length > 0) {
+      const { ProductVariation } = require('../models');
+      
+      for (const combination of combinations) {
+        const variationData = {
+          product_id: product.id,
+          size: combination.values.size || null,
+          color: combination.values.color || null,
+          price: parseFloat(combination.price) || parseFloat(productData.price),
+          stock: parseInt(combination.stock) || 0,
+          is_active: combination.is_active !== false,
+          combination_string: combination.combination_string || null
+        };
+        
+        // Handle custom variation types (material, etc.)
+        Object.keys(combination.values).forEach(key => {
+          if (key !== 'size' && key !== 'color' && combination.values[key]) {
+            // Store custom variations in size field with prefix
+            if (!variationData.size) {
+              variationData.size = `${key}: ${combination.values[key]}`;
+            } else {
+              variationData.size += ` | ${key}: ${combination.values[key]}`;
+            }
+          }
+        });
+        
+        await ProductVariation.create(variationData);
+      }
+    }
+    // Create variations if provided (legacy method)
+    else if (variations.length > 0) {
       const { ProductVariation } = require('../models');
       
       for (const variation of variations) {
@@ -543,8 +582,9 @@ const createProduct = async (req, res) => {
             product_id: product.id,
             size: null,
             color: null,
-            price: productData.price, // Use base product price for now
-            stock: Math.floor(productData.stock / variations.length) || 0 // Distribute stock evenly
+            price: parseFloat(productData.price),
+            stock: Math.floor(parseInt(productData.stock) / variations.length) || 0,
+            is_active: true
           };
           
           // Set the appropriate field based on variation type
@@ -590,9 +630,17 @@ const updateProduct = async (req, res) => {
       productData.image = `/uploads/products/${req.file.filename}`;
     }
 
-    // Parse variations if present
+    // Parse combinations or variations if present
+    let combinations = [];
     let variations = [];
-    if (productData.variations) {
+    
+    if (productData.combinations) {
+      try {
+        combinations = JSON.parse(productData.combinations);
+      } catch (e) {
+        console.error('Error parsing combinations:', e);
+      }
+    } else if (productData.variations) {
       try {
         variations = JSON.parse(productData.variations);
       } catch (e) {
@@ -600,13 +648,50 @@ const updateProduct = async (req, res) => {
       }
     }
 
-    // Remove variations from productData as it's not a Product field
+    // Remove from productData as they're not Product fields
+    delete productData.combinations;
     delete productData.variations;
 
     await product.update(productData);
     
-    // Update variations if provided
-    if (variations.length > 0) {
+    // Update combinations if provided (preferred method)
+    if (combinations.length > 0) {
+      const { ProductVariation } = require('../models');
+      
+      // Delete existing variations
+      await ProductVariation.destroy({
+        where: { product_id: id }
+      });
+      
+      // Create new combinations
+      for (const combination of combinations) {
+        const variationData = {
+          product_id: product.id,
+          size: combination.values.size || null,
+          color: combination.values.color || null,
+          price: parseFloat(combination.price) || parseFloat(productData.price || product.price),
+          stock: parseInt(combination.stock) || 0,
+          is_active: combination.is_active !== false,
+          combination_string: combination.combination_string || null
+        };
+        
+        // Handle custom variation types (material, etc.)
+        Object.keys(combination.values).forEach(key => {
+          if (key !== 'size' && key !== 'color' && combination.values[key]) {
+            // Store custom variations in size field with prefix
+            if (!variationData.size) {
+              variationData.size = `${key}: ${combination.values[key]}`;
+            } else {
+              variationData.size += ` | ${key}: ${combination.values[key]}`;
+            }
+          }
+        });
+        
+        await ProductVariation.create(variationData);
+      }
+    }
+    // Update variations if provided (legacy method)
+    else if (variations.length > 0) {
       const { ProductVariation } = require('../models');
       
       // Delete existing variations
@@ -621,8 +706,9 @@ const updateProduct = async (req, res) => {
             product_id: product.id,
             size: null,
             color: null,
-            price: productData.price || product.price,
-            stock: Math.floor((productData.stock || product.stock) / variations.length) || 0
+            price: parseFloat(productData.price || product.price),
+            stock: Math.floor((parseInt(productData.stock) || product.stock) / variations.length) || 0,
+            is_active: true
           };
           
           // Set the appropriate field based on variation type
