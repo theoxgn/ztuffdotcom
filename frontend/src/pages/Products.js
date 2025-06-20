@@ -491,7 +491,7 @@ const Products = () => {
                   <div className="product-image-container position-relative">
                     <Card.Img 
                       variant="top" 
-                      src={product.image || '/default.webp'} 
+                      src={product.image ? `${process.env.REACT_APP_API_URL}${product.image}` : '/default.webp'} 
                       alt={product.name}
                       className="product-image"
                       onError={(e) => { e.target.src = '/default.webp'; }}

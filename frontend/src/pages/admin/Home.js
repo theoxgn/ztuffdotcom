@@ -56,11 +56,32 @@ const Home = ({ data, loading }) => {
 
   // Generate sales chart data
   const generateSalesChartData = () => {
-    const realData = data?.monthlySales || [];
+    const realData = data?.monthlyRevenue || [];
     
-    // Use real data if available, otherwise show empty chart
-    const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul'];
-    const salesData = realData.length > 0 ? realData : new Array(7).fill(0);
+    console.log('Monthly Revenue Data:', realData); // Debug log
+    
+    // Create month labels from the actual data
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    
+    let labels = [];
+    let salesData = [];
+    
+    if (realData.length > 0) {
+      // Use real data from backend
+      labels = realData.map(item => {
+        const [year, month] = item.month.split('-');
+        const monthIndex = parseInt(month) - 1;
+        return months[monthIndex];
+      });
+      salesData = realData.map(item => item.revenue);
+    } else {
+      // Fallback to empty data
+      labels = months.slice(0, 6);
+      salesData = new Array(6).fill(0);
+    }
+    
+    console.log('Chart Labels:', labels); // Debug log
+    console.log('Chart Data:', salesData); // Debug log
     
     return {
       labels,
@@ -73,6 +94,10 @@ const Home = ({ data, loading }) => {
           borderWidth: 3,
           fill: true,
           tension: 0.4,
+          pointBackgroundColor: '#1428a0',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
         },
       ],
     };
@@ -382,8 +407,9 @@ const Home = ({ data, loading }) => {
                             alt={product.name} 
                             width="40" 
                             height="40" 
-                            className="me-2"
+                            className="me-2 rounded"
                             style={{ objectFit: 'cover' }}
+                            onError={(e) => { e.target.src = '/default.webp'; }}
                           />
                           {product.name}
                         </div>

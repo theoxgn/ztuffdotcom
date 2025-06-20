@@ -821,7 +821,7 @@ const OrderDetail = () => {
                           <td>
                             <div className="d-flex align-items-center">
                               <img 
-                                src={item.product?.image ? `${process.env.REACT_APP_API_URL}/uploads/${item.product.image}` : '/default.webp'} 
+                                src={item.product?.image ? `${process.env.REACT_APP_API_URL}${item.product.image}` : '/default.webp'} 
                                 alt={item.product?.name || 'Product'} 
                                 width="50" 
                                 height="50" 

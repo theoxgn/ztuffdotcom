@@ -245,7 +245,7 @@ const ProductDetail = () => {
                 <>
                   <div className="product-main-image mb-3">
                     <Image 
-                      src={product.images[activeImage].image || '/default.webp'}
+                      src={product.images[activeImage].image ? `${process.env.REACT_APP_API_URL}${product.images[activeImage].image}` : '/default.webp'}
                       alt={product.name}
                       fluid
                       className="rounded"
@@ -257,7 +257,7 @@ const ProductDetail = () => {
                     {product.images.map((image, index) => (
                       <Col xs={3} key={image.id}>
                         <Image 
-                          src={image.image || '/default.webp'}
+                          src={image.image ? `${process.env.REACT_APP_API_URL}${image.image}` : '/default.webp'}
                           alt={`${product.name} - ${index + 1}`}
                           className={`cursor-pointer rounded ${activeImage === index ? 'border border-2 border-primary' : 'border'}`}
                           onClick={() => setActiveImage(index)}
@@ -270,7 +270,7 @@ const ProductDetail = () => {
                 </>
               ) : (
                 <Image 
-                  src={product.image || '/default.webp'}
+                  src={product.image ? `${process.env.REACT_APP_API_URL}${product.image}` : '/default.webp'}
                   alt={product.name}
                   fluid
                   className="rounded"
@@ -586,7 +586,7 @@ const ProductDetail = () => {
                     <div className="position-relative overflow-hidden">
                       <Card.Img 
                         variant="top" 
-                        src={relatedProduct.image || '/default.webp'}
+                        src={relatedProduct.image ? `${process.env.REACT_APP_API_URL}${relatedProduct.image}` : '/default.webp'}
                         alt={relatedProduct.name}
                         style={{ height: '200px', objectFit: 'cover' }}
                         onError={(e) => { e.target.src = '/default.webp'; }}

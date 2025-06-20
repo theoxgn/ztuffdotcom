@@ -16,8 +16,9 @@ const getDashboardData = async (req, res) => {
     const newOrderCount = await Order.count({ where: { status: 'pending' } });
     const totalRevenue = await Order.sum('total', { where: { status: 'delivered' } }) || 0;
     const categoryCount = await Category.count();
+    const totalOrderCount = await Order.count();
 
-    // Recent orders (last 10)
+    // Recent orders (last 5)
     const recentOrders = await Order.findAll({
       include: [
         {
@@ -26,7 +27,7 @@ const getDashboardData = async (req, res) => {
           attributes: ['id', 'name', 'email']
         }
       ],
-      limit: 10,
+      limit: 5,
       order: [['createdAt', 'DESC']],
       attributes: [
         'id', 
@@ -52,20 +53,28 @@ const getDashboardData = async (req, res) => {
       statusDistribution[order.status] = parseInt(order.getDataValue('count'));
     });
 
-    // Monthly sales data (last 7 months)
+    // Monthly sales data (last 6 months including current month)
     const monthlyRevenue = await sequelize.query(`
+      WITH monthly_range AS (
+        SELECT 
+          TO_CHAR(generate_series(
+            DATE_TRUNC('month', NOW() - INTERVAL '5 months'),
+            DATE_TRUNC('month', NOW()),
+            INTERVAL '1 month'
+          ), 'YYYY-MM') as month
+      )
       SELECT 
-        TO_CHAR("createdAt", 'YYYY-MM') as month,
-        SUM(total) as revenue,
-        COUNT(*) as order_count
-      FROM "Orders" 
-      WHERE status = 'delivered' 
-        AND "createdAt" >= NOW() - INTERVAL '7 months'
-      GROUP BY TO_CHAR("createdAt", 'YYYY-MM')
-      ORDER BY month DESC
+        mr.month,
+        COALESCE(SUM(o.total), 0) as revenue,
+        COALESCE(COUNT(o.id), 0) as order_count
+      FROM monthly_range mr
+      LEFT JOIN "Orders" o ON TO_CHAR(o."createdAt", 'YYYY-MM') = mr.month 
+        AND o.status = 'delivered'
+      GROUP BY mr.month
+      ORDER BY mr.month ASC
     `, { type: sequelize.QueryTypes.SELECT });
 
-    // Top selling products
+    // Top selling products (only products that have been sold)
     const topProducts = await sequelize.query(`
       SELECT 
         p.id,
@@ -73,29 +82,31 @@ const getDashboardData = async (req, res) => {
         p.price,
         p.image,
         c.name as category_name,
-        COALESCE(SUM(oi.quantity), 0) as sold_count,
-        COALESCE(SUM(oi.quantity * oi.price), 0) as revenue
+        SUM(oi.quantity) as sold_count,
+        SUM(oi.quantity * oi.price) as revenue
       FROM "Products" p
-      LEFT JOIN "OrderItems" oi ON p.id = oi.product_id
-      LEFT JOIN "Orders" o ON oi.order_id = o.id
+      INNER JOIN "OrderItems" oi ON p.id = oi.product_id
+      INNER JOIN "Orders" o ON oi.order_id = o.id
       LEFT JOIN "Categories" c ON p.category_id = c.id
-      WHERE o.status = 'delivered' OR o.status IS NULL
+      WHERE o.status = 'delivered'
       GROUP BY p.id, p.name, p.price, p.image, c.name
+      HAVING SUM(oi.quantity) > 0
       ORDER BY sold_count DESC
       LIMIT 10
     `, { type: sequelize.QueryTypes.SELECT });
 
-    // Sales by category
+    // Sales by category (only categories with actual sales)
     const salesByCategory = await sequelize.query(`
       SELECT 
         c.name,
-        COALESCE(SUM(oi.quantity * oi.price), 0) as sales
+        SUM(oi.quantity * oi.price) as sales
       FROM "Categories" c
-      LEFT JOIN "Products" p ON c.id = p.category_id
-      LEFT JOIN "OrderItems" oi ON p.id = oi.product_id
-      LEFT JOIN "Orders" o ON oi.order_id = o.id
-      WHERE o.status = 'delivered' OR o.status IS NULL
+      INNER JOIN "Products" p ON c.id = p.category_id
+      INNER JOIN "OrderItems" oi ON p.id = oi.product_id
+      INNER JOIN "Orders" o ON oi.order_id = o.id
+      WHERE o.status = 'delivered'
       GROUP BY c.id, c.name
+      HAVING SUM(oi.quantity * oi.price) > 0
       ORDER BY sales DESC
       LIMIT 5
     `, { type: sequelize.QueryTypes.SELECT });
@@ -103,14 +114,28 @@ const getDashboardData = async (req, res) => {
     return successResponse(res, 200, 'Data dashboard berhasil dimuat', {
       userCount,
       productCount,
+      totalOrderCount,
       newOrderCount,
-      totalRevenue,
+      totalRevenue: parseFloat(totalRevenue) || 0,
       categoryCount,
       recentOrders,
       ordersByStatus: statusDistribution,
-      monthlySales: monthlyRevenue.map(m => parseFloat(m.revenue) || 0),
-      topProducts,
-      salesByCategory
+      monthlyRevenue: monthlyRevenue.map(m => ({
+        month: m.month,
+        revenue: parseFloat(m.revenue) || 0,
+        orderCount: parseInt(m.order_count) || 0
+      })),
+      topProducts: topProducts.map(p => ({
+        ...p,
+        price: parseFloat(p.price) || 0,
+        sold_count: parseInt(p.sold_count) || 0,
+        revenue: parseFloat(p.revenue) || 0,
+        image: p.image ? `${process.env.API_BASE_URL || 'http://localhost:3001'}${p.image}` : null
+      })),
+      salesByCategory: salesByCategory.map(s => ({
+        name: s.name,
+        sales: parseFloat(s.sales) || 0
+      }))
     });
   } catch (error) {
     console.error('Error in getDashboardData:', error);
