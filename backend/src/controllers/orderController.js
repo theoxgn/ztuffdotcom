@@ -416,8 +416,20 @@ const updateOrderStatus = async (req, res) => {
       }
     }
     
+    // Prepare update data
+    const updateData = { status: status };
+    
+    // If status is changing to delivered, set delivery-related fields
+    if (status === 'delivered' && order.status !== 'delivered') {
+      const now = new Date();
+      updateData.delivered_date = now;
+      // Set return window to 30 days from delivery
+      updateData.return_window_expires = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+      updateData.is_returnable = true;
+    }
+    
     // Update order status
-    await order.update({ status: status });
+    await order.update(updateData);
     
     return successResponse(res, 200, 'Status pesanan berhasil diperbarui', { order });
   } catch (error) {

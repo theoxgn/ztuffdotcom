@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Card, Table, Badge, Button, Spinner, Alert, Tabs, Tab, Modal, Form, Row, Col, Container } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faCreditCard, faShoppingBag, faCalendarAlt, faMapMarkerAlt, faTruck, faCheckCircle, faTimesCircle, faClock, faBox, faSync, faPercent } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faCreditCard, faShoppingBag, faCalendarAlt, faMapMarkerAlt, faTruck, faCheckCircle, faTimesCircle, faClock, faBox, faSync, faPercent, faUndo } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import AuthContext from '../../contexts/AuthContext';
 import { PaymentInfo } from '../../components';
@@ -128,6 +128,22 @@ const OrderHistory = () => {
       case 'cancelled': return 'danger';
       default: return 'secondary';
     }
+  };
+
+  // Check if order can be returned
+  const canOrderBeReturned = (order) => {
+    if (order.status !== 'delivered') return false;
+    if (order.has_active_returns) return false;
+    
+    // Check if within return window (assume 30 days for now)
+    if (order.delivered_date) {
+      const deliveredDate = new Date(order.delivered_date);
+      const now = new Date();
+      const daysDiff = Math.floor((now - deliveredDate) / (1000 * 60 * 60 * 24));
+      return daysDiff <= 30;
+    }
+    
+    return order.is_returnable !== false;
   };
 
   // Get status display text
@@ -394,6 +410,18 @@ const OrderHistory = () => {
                             {refreshingStatus === order.id ? 'Checking...' : 'Refresh'}
                           </Button>
                         )}
+                        {canOrderBeReturned(order) && (
+                          <Button
+                            variant="outline-warning"
+                            size="sm"
+                            onClick={() => handleViewDetails(order)}
+                            className="px-3 rounded-pill"
+                            title="Lihat detail untuk return item"
+                          >
+                            <FontAwesomeIcon icon={faUndo} className="me-1" />
+                            Retur
+                          </Button>
+                        )}
                       </div>
                     </Col>
                   </Row>
@@ -515,6 +543,19 @@ const OrderHistory = () => {
                                 <div className="fw-bold text-primary">Rp {parseFloat(item.total).toLocaleString('id-ID')}</div>
                               </Col>
                             </Row>
+                            {canOrderBeReturned(orderDetails) && (
+                              <Row className="mt-2">
+                                <Col className="text-end">
+                                  <Link
+                                    to={`/return/request/${orderDetails.id}/${item.id}`}
+                                    className="btn btn-outline-warning btn-sm"
+                                  >
+                                    <FontAwesomeIcon icon={faUndo} className="me-1" />
+                                    Return Item Ini
+                                  </Link>
+                                </Col>
+                              </Row>
+                            )}
                           </Card.Body>
                         </Card>
                       ))}

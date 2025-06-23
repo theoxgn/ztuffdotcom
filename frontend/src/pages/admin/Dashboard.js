@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faHome, faUsers, faBoxes, faShoppingCart, 
-  faTag, faPercent, faTicket, faBook, faCog
+  faTag, faPercent, faTicket, faBook, faCog, faUndo
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
@@ -19,6 +19,7 @@ import AdminVouchers from './Vouchers';
 import AdminDiscounts from './Discounts';
 import AdminTutorials from './Tutorials';
 import AdminSettings from './Settings';
+import AdminReturns from './Returns';
 
 const Dashboard = () => {
   const location = useLocation();
@@ -55,6 +56,7 @@ const Dashboard = () => {
     if (path.includes('/admin/categories')) return 'categories';
     if (path.includes('/admin/vouchers')) return 'vouchers';
     if (path.includes('/admin/discounts')) return 'discounts';
+    if (path.includes('/admin/returns')) return 'returns';
     if (path.includes('/admin/tutorials')) return 'tutorials';
     if (path.includes('/admin/settings')) return 'settings';
     return 'home';
@@ -68,6 +70,7 @@ const Dashboard = () => {
     { key: 'categories', path: '/admin/categories', icon: faTag, label: 'Kategori' },
     { key: 'vouchers', path: '/admin/vouchers', icon: faPercent, label: 'Voucher' },
     { key: 'discounts', path: '/admin/discounts', icon: faTicket, label: 'Diskon' },
+    { key: 'returns', path: '/admin/returns', icon: faUndo, label: 'Pengembalian' },
     { key: 'tutorials', path: '/admin/tutorials', icon: faBook, label: 'Tutorial' },
     { key: 'settings', path: '/admin/settings', icon: faCog, label: 'Settings' }
   ];
@@ -135,6 +138,7 @@ const Dashboard = () => {
               <Route path="/categories" element={<AdminCategories />} />
               <Route path="/vouchers/*" element={<AdminVouchers />} />
               <Route path="/discounts" element={<AdminDiscounts />} />
+              <Route path="/returns/*" element={<AdminReturns />} />
               <Route path="/tutorials/*" element={<AdminTutorials />} />
               <Route path="/settings" element={<AdminSettings />} />
             </Routes>

@@ -17,6 +17,10 @@ const Wishlist = require('./Wishlist');
 const Setting = require('./Setting');
 const Review = require('./Review');
 const Discount = require('./Discount');
+const ReturnRequest = require('./ReturnRequest');
+const ReturnPolicy = require('./ReturnPolicy');
+const QualityCheck = require('./QualityCheck');
+const DamagedInventory = require('./DamagedInventory');
 
 // Define associations
 
@@ -96,6 +100,75 @@ Review.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
 Order.hasMany(Review, { foreignKey: 'order_id' });
 Review.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
 
+// Return Management Associations
+
+// User - ReturnRequest
+User.hasMany(ReturnRequest, { foreignKey: 'user_id', as: 'returnRequests' });
+ReturnRequest.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// Order - ReturnRequest
+Order.hasMany(ReturnRequest, { foreignKey: 'order_id', as: 'returnRequests' });
+ReturnRequest.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
+
+// OrderItem - ReturnRequest
+OrderItem.hasMany(ReturnRequest, { foreignKey: 'order_item_id', as: 'returnRequests' });
+ReturnRequest.belongsTo(OrderItem, { foreignKey: 'order_item_id', as: 'orderItem' });
+
+// User - ReturnRequest (processed by)
+User.hasMany(ReturnRequest, { foreignKey: 'processed_by', as: 'processedReturns' });
+ReturnRequest.belongsTo(User, { foreignKey: 'processed_by', as: 'processor' });
+
+// Order - ReturnRequest (replacement order)
+Order.hasMany(ReturnRequest, { foreignKey: 'replacement_order_id', as: 'replacementReturns' });
+ReturnRequest.belongsTo(Order, { foreignKey: 'replacement_order_id', as: 'replacementOrder' });
+
+// Product - ReturnPolicy
+Product.hasOne(ReturnPolicy, { foreignKey: 'product_id', as: 'returnPolicy' });
+ReturnPolicy.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
+
+// Category - ReturnPolicy
+Category.hasMany(ReturnPolicy, { foreignKey: 'category_id', as: 'returnPolicies' });
+ReturnPolicy.belongsTo(Category, { foreignKey: 'category_id', as: 'category' });
+
+// ReturnRequest - QualityCheck
+ReturnRequest.hasOne(QualityCheck, { foreignKey: 'return_request_id', as: 'qualityCheck' });
+QualityCheck.belongsTo(ReturnRequest, { foreignKey: 'return_request_id', as: 'returnRequest' });
+
+// Product - QualityCheck
+Product.hasMany(QualityCheck, { foreignKey: 'product_id', as: 'qualityChecks' });
+QualityCheck.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
+
+// ProductVariation - QualityCheck
+ProductVariation.hasMany(QualityCheck, { foreignKey: 'variation_id', as: 'qualityChecks' });
+QualityCheck.belongsTo(ProductVariation, { foreignKey: 'variation_id', as: 'variation' });
+
+// User - QualityCheck (inspector)
+User.hasMany(QualityCheck, { foreignKey: 'inspector_id', as: 'inspectedQualityChecks' });
+QualityCheck.belongsTo(User, { foreignKey: 'inspector_id', as: 'inspector' });
+
+// Product - DamagedInventory
+Product.hasMany(DamagedInventory, { foreignKey: 'product_id', as: 'damagedInventory' });
+DamagedInventory.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
+
+// ProductVariation - DamagedInventory
+ProductVariation.hasMany(DamagedInventory, { foreignKey: 'variation_id', as: 'damagedInventory' });
+DamagedInventory.belongsTo(ProductVariation, { foreignKey: 'variation_id', as: 'variation' });
+
+// ReturnRequest - DamagedInventory
+ReturnRequest.hasMany(DamagedInventory, { foreignKey: 'return_request_id', as: 'damagedItems' });
+DamagedInventory.belongsTo(ReturnRequest, { foreignKey: 'return_request_id', as: 'returnRequest' });
+
+// QualityCheck - DamagedInventory
+QualityCheck.hasMany(DamagedInventory, { foreignKey: 'quality_check_id', as: 'damagedItems' });
+DamagedInventory.belongsTo(QualityCheck, { foreignKey: 'quality_check_id', as: 'qualityCheck' });
+
+// User - DamagedInventory (reported by & assessed by)
+User.hasMany(DamagedInventory, { foreignKey: 'reported_by', as: 'reportedDamagedItems' });
+DamagedInventory.belongsTo(User, { foreignKey: 'reported_by', as: 'reporter' });
+
+User.hasMany(DamagedInventory, { foreignKey: 'assessed_by', as: 'assessedDamagedItems' });
+DamagedInventory.belongsTo(User, { foreignKey: 'assessed_by', as: 'assessor' });
+
 // Export models
 module.exports = {
   sequelize,
@@ -114,5 +187,9 @@ module.exports = {
   Wishlist,
   Setting,
   Review,
-  Discount
+  Discount,
+  ReturnRequest,
+  ReturnPolicy,
+  QualityCheck,
+  DamagedInventory
 }; 

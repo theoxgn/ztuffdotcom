@@ -12,7 +12,8 @@ import {
   faUserPlus, 
   faTachometerAlt,
   faSearch,
-  faHeart
+  faHeart,
+  faUndo
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import AuthContext from '../contexts/AuthContext';
@@ -182,6 +183,11 @@ const MainLayout = ({ children }) => {
                   <NavDropdown.Item as={Link} to="/user/orders">
                     <FontAwesomeIcon icon={faShoppingBag} className="me-2" />
                     My Orders
+                  </NavDropdown.Item>
+                  
+                  <NavDropdown.Item as={Link} to="/user/returns">
+                    <FontAwesomeIcon icon={faUndo} className="me-2" />
+                    My Returns
                   </NavDropdown.Item>
                   
                   <NavDropdown.Divider />

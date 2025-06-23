@@ -21,6 +21,11 @@ import PointHistory from './pages/user/PointHistory';
 import Tutorial from './pages/Tutorial';
 import Wishlist from './pages/Wishlist';
 
+// Return Components
+import ReturnRequest from './components/ReturnRequest';
+import ReturnHistory from './components/ReturnHistory';
+import ReturnDetail from './components/ReturnDetail';
+
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminUsers from './pages/admin/Users';
@@ -91,6 +96,37 @@ function App() {
                 </ProtectedRoute>
               </MainLayout>
             } />
+            <Route path="/user/points" element={
+              <MainLayout>
+                <ProtectedRoute>
+                  <PointHistory />
+                </ProtectedRoute>
+              </MainLayout>
+            } />
+            
+            {/* Return Routes */}
+            <Route path="/user/returns" element={
+              <MainLayout>
+                <ProtectedRoute>
+                  <ReturnHistory />
+                </ProtectedRoute>
+              </MainLayout>
+            } />
+            <Route path="/user/returns/:id" element={
+              <MainLayout>
+                <ProtectedRoute>
+                  <ReturnDetail />
+                </ProtectedRoute>
+              </MainLayout>
+            } />
+            <Route path="/return/request/:orderId/:orderItemId" element={
+              <MainLayout>
+                <ProtectedRoute>
+                  <ReturnRequest />
+                </ProtectedRoute>
+              </MainLayout>
+            } />
+            
             <Route path="/wishlist" element={
               <MainLayout>
                 <Wishlist />

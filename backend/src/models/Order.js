@@ -139,6 +139,34 @@ const Order = sequelize.define('Order', {
   midtrans_transaction_status: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  delivered_date: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Date when order was delivered to customer'
+  },
+  return_window_expires: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Date when return window expires'
+  },
+  is_returnable: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+    comment: 'Whether this order can be returned'
+  },
+  has_active_returns: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Whether this order has active return requests'
+  },
+  total_returned_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0,
+    comment: 'Total amount returned for this order'
   }
 });
 
