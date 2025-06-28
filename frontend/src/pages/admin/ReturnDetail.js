@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Row, Col, Card, Button, Badge, Form, Alert, Modal } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faCheck, faTimes, faEdit, faUser, faBox, faCalendar, faDollarSign } from '@fortawesome/free-solid-svg-icons';
-import { getAdminReturnById, processReturnRequest, getReturnStatusText } from '../../services/returnService';
+import { getAdminReturnById, processReturnRequest, markItemReceived, processQualityCheck, processRefund, getReturnStatusText } from '../../services/returnService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Toast from '../../components/Toast';
 
@@ -15,6 +15,19 @@ const ReturnDetail = () => {
   const [error, setError] = useState('');
   const [showProcessDialog, setShowProcessDialog] = useState(false);
   const [processAction, setProcessAction] = useState('');
+  const [qcData, setQcData] = useState({
+    condition: '',
+    sellable_quantity: 0,
+    damaged_quantity: 0,
+    missing_quantity: 0,
+    disposition: '',
+    qc_notes: ''
+  });
+  const [refundData, setRefundData] = useState({
+    refund_amount: 0,
+    refund_method: 'original_payment',
+    refund_notes: ''
+  });
   const [adminNotes, setAdminNotes] = useState('');
   const [approvedAmount, setApprovedAmount] = useState('');
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
@@ -52,24 +65,41 @@ const ReturnDetail = () => {
   const confirmProcessReturn = async () => {
     if (!returnData || !processAction) return;
 
-    const processData = {
-      action: processAction,
-      admin_notes: adminNotes
-    };
-
-    if (processAction === 'approve' && approvedAmount) {
-      processData.approved_amount = parseFloat(approvedAmount);
-    }
-
     try {
-      console.log('Processing return with data:', processData);
-      const response = await processReturnRequest(returnData.id, processData);
-      console.log('Response:', response);
+      let response;
+      
+      if (processAction === 'approve' || processAction === 'reject') {
+        const processData = {
+          action: processAction,
+          admin_notes: adminNotes
+        };
+        if (processAction === 'approve' && approvedAmount) {
+          processData.approved_amount = parseFloat(approvedAmount);
+        }
+        response = await processReturnRequest(returnData.id, processData);
+      } 
+      else if (processAction === 'mark_received') {
+        response = await markItemReceived(returnData.id, {
+          admin_notes: adminNotes
+        });
+      }
+      else if (processAction === 'quality_check') {
+        response = await processQualityCheck(returnData.id, {
+          ...qcData,
+          qc_notes: adminNotes
+        });
+      }
+      else if (processAction === 'process_refund') {
+        response = await processRefund(returnData.id, {
+          ...refundData,
+          refund_notes: adminNotes
+        });
+      }
       
       if (response.success) {
         setToast({
           show: true,
-          message: `Permintaan pengembalian berhasil ${processAction === 'approve' ? 'disetujui' : 'ditolak'}`,
+          message: getSuccessMessage(processAction),
           type: 'success'
         });
         fetchReturnDetail(); // Refresh the data
@@ -92,6 +122,17 @@ const ReturnDetail = () => {
       setProcessAction('');
       setAdminNotes('');
     }
+  };
+
+  const getSuccessMessage = (action) => {
+    const messages = {
+      'approve': 'Permintaan pengembalian berhasil disetujui',
+      'reject': 'Permintaan pengembalian berhasil ditolak',
+      'mark_received': 'Barang berhasil dimark sebagai diterima',
+      'quality_check': 'Quality check berhasil diproses',
+      'process_refund': 'Refund berhasil diproses'
+    };
+    return messages[action] || 'Proses berhasil';
   };
 
   const formatCurrency = (amount) => {
@@ -127,6 +168,18 @@ const ReturnDetail = () => {
 
   const canProcess = (status) => {
     return status === 'pending';
+  };
+
+  const canMarkReceived = (status) => {
+    return status === 'approved';
+  };
+
+  const canQualityCheck = (status) => {
+    return status === 'item_received';
+  };
+
+  const canProcessRefund = (status) => {
+    return status === 'quality_check';
   };
 
   if (loading) {
@@ -184,7 +237,7 @@ const ReturnDetail = () => {
             <FontAwesomeIcon icon={faArrowLeft} className="me-2" />
             Kembali
           </Button>
-          {canProcess(returnData.status) ? (
+          {canProcess(returnData.status) && (
             <>
               <Button
                 variant="success"
@@ -201,10 +254,33 @@ const ReturnDetail = () => {
                 Tolak
               </Button>
             </>
-          ) : (
-            <div>
-              <small className="text-muted">Status: {returnData.status} - {canProcess(returnData.status) ? 'Can process' : 'Cannot process'}</small>
-            </div>
+          )}
+          {canMarkReceived(returnData.status) && (
+            <Button
+              variant="info"
+              onClick={() => handleProcessReturn('mark_received')}
+            >
+              <FontAwesomeIcon icon={faBox} className="me-2" />
+              Mark as Received
+            </Button>
+          )}
+          {canQualityCheck(returnData.status) && (
+            <Button
+              variant="warning"
+              onClick={() => handleProcessReturn('quality_check')}
+            >
+              <FontAwesomeIcon icon={faEdit} className="me-2" />
+              Quality Check
+            </Button>
+          )}
+          {canProcessRefund(returnData.status) && (
+            <Button
+              variant="primary"
+              onClick={() => handleProcessReturn('process_refund')}
+            >
+              <FontAwesomeIcon icon={faDollarSign} className="me-2" />
+              Process Refund
+            </Button>
           )}
         </div>
       </div>
@@ -415,6 +491,101 @@ const ReturnDetail = () => {
                 placeholder="Masukkan jumlah yang disetujui"
               />
             </Form.Group>
+          )}
+
+          {processAction === 'quality_check' && (
+            <>
+              <Form.Group className="mb-3">
+                <Form.Label className="fw-medium">Kondisi Barang</Form.Label>
+                <Form.Select
+                  value={qcData.condition}
+                  onChange={(e) => setQcData({...qcData, condition: e.target.value})}
+                >
+                  <option value="">Pilih kondisi barang</option>
+                  <option value="excellent">Excellent</option>
+                  <option value="good">Good</option>
+                  <option value="fair">Fair</option>
+                  <option value="poor">Poor</option>
+                  <option value="damaged">Damaged</option>
+                  <option value="unsellable">Unsellable</option>
+                </Form.Select>
+              </Form.Group>
+              
+              <Row>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-medium">Qty Sellable</Form.Label>
+                    <Form.Control
+                      type="number"
+                      value={qcData.sellable_quantity}
+                      onChange={(e) => setQcData({...qcData, sellable_quantity: parseInt(e.target.value)})}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-medium">Qty Damaged</Form.Label>
+                    <Form.Control
+                      type="number"
+                      value={qcData.damaged_quantity}
+                      onChange={(e) => setQcData({...qcData, damaged_quantity: parseInt(e.target.value)})}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-medium">Qty Missing</Form.Label>
+                    <Form.Control
+                      type="number"
+                      value={qcData.missing_quantity}
+                      onChange={(e) => setQcData({...qcData, missing_quantity: parseInt(e.target.value)})}
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              <Form.Group className="mb-3">
+                <Form.Label className="fw-medium">Disposition</Form.Label>
+                <Form.Select
+                  value={qcData.disposition}
+                  onChange={(e) => setQcData({...qcData, disposition: e.target.value})}
+                >
+                  <option value="">Pilih disposition</option>
+                  <option value="restock">Restock</option>
+                  <option value="repair">Repair</option>
+                  <option value="salvage">Salvage</option>
+                  <option value="dispose">Dispose</option>
+                  <option value="return_to_supplier">Return to Supplier</option>
+                </Form.Select>
+              </Form.Group>
+            </>
+          )}
+
+          {processAction === 'process_refund' && (
+            <>
+              <Form.Group className="mb-3">
+                <Form.Label className="fw-medium">Refund Amount</Form.Label>
+                <Form.Control
+                  type="number"
+                  value={refundData.refund_amount}
+                  onChange={(e) => setRefundData({...refundData, refund_amount: parseFloat(e.target.value)})}
+                  placeholder="Masukkan jumlah refund"
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label className="fw-medium">Refund Method</Form.Label>
+                <Form.Select
+                  value={refundData.refund_method}
+                  onChange={(e) => setRefundData({...refundData, refund_method: e.target.value})}
+                >
+                  <option value="original_payment">Original Payment Method</option>
+                  <option value="store_credit">Store Credit</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="manual">Manual</option>
+                </Form.Select>
+              </Form.Group>
+            </>
           )}
           
           <Form.Group>

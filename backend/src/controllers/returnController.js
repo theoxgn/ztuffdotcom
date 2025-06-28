@@ -186,7 +186,7 @@ const createReturnRequest = async (req, res) => {
     await t.commit();
 
     // Send notification (implement based on your notification system)
-    // await sendReturnRequestNotification(returnRequest);
+    await sendReturnStatusNotification(returnRequest, 'created');
 
     return successResponse(res, 201, 'Permintaan pengembalian berhasil dibuat', {
       return_request: returnRequest
@@ -613,7 +613,7 @@ const processReturnRequest = async (req, res) => {
     await t.commit();
 
     // Send notification
-    // await sendReturnStatusNotification(returnRequest, action);
+    await sendReturnStatusNotification(returnRequest, action);
 
     return successResponse(res, 200, `Permintaan pengembalian berhasil ${action === 'approve' ? 'disetujui' : 'ditolak'}`);
 
@@ -742,6 +742,304 @@ const checkEligibilityInternal = async (orderId, orderItemId, userId) => {
   }
 };
 
+/**
+ * Mark return as item received (admin only)
+ * @param {object} req - Request object
+ * @param {object} res - Response object
+ * @returns {object} Response object
+ */
+const markItemReceived = async (req, res) => {
+  const t = await sequelize.transaction();
+
+  try {
+    const { id } = req.params;
+    const { admin_notes, received_date, shipping_tracking } = req.body;
+    const adminId = req.user.id;
+
+    const returnRequest = await ReturnRequest.findByPk(id);
+
+    if (!returnRequest) {
+      return errorResponse(res, 404, 'Permintaan pengembalian tidak ditemukan');
+    }
+
+    if (returnRequest.status !== 'approved') {
+      return errorResponse(res, 400, 'Status return harus approved untuk mark as received');
+    }
+
+    await returnRequest.update({
+      status: 'item_received',
+      admin_notes: admin_notes || returnRequest.admin_notes,
+      received_date: received_date || new Date(),
+      shipping_tracking,
+      processed_by: adminId,
+      processed_at: new Date()
+    }, { transaction: t });
+
+    await t.commit();
+
+    // Send notification to customer
+    await sendReturnStatusNotification(returnRequest, 'item_received');
+
+    return successResponse(res, 200, 'Return berhasil dimark sebagai item received');
+
+  } catch (error) {
+    await t.rollback();
+    console.error('Error in markItemReceived:', error);
+    return errorResponse(res, 500, 'Terjadi kesalahan pada server');
+  }
+};
+
+/**
+ * Process quality check (admin only)
+ * @param {object} req - Request object
+ * @param {object} res - Response object
+ * @returns {object} Response object
+ */
+const processQualityCheck = async (req, res) => {
+  const t = await sequelize.transaction();
+
+  try {
+    const { id } = req.params;
+    const {
+      condition,
+      sellable_quantity,
+      damaged_quantity,
+      missing_quantity,
+      disposition,
+      qc_notes,
+      photos = []
+    } = req.body;
+    const adminId = req.user.id;
+
+    const returnRequest = await ReturnRequest.findByPk(id, {
+      include: [
+        {
+          model: QualityCheck,
+          as: 'qualityCheck'
+        }
+      ]
+    });
+
+    if (!returnRequest) {
+      return errorResponse(res, 404, 'Permintaan pengembalian tidak ditemukan');
+    }
+
+    if (returnRequest.status !== 'item_received') {
+      return errorResponse(res, 400, 'Status return harus item_received untuk quality check');
+    }
+
+    // Update quality check
+    if (returnRequest.qualityCheck) {
+      await returnRequest.qualityCheck.update({
+        condition,
+        sellable_quantity,
+        damaged_quantity,
+        missing_quantity,
+        disposition,
+        qc_notes,
+        photos,
+        status: 'completed',
+        inspector_id: adminId,
+        completed_at: new Date()
+      }, { transaction: t });
+    }
+
+    // Update return status
+    await returnRequest.update({
+      status: 'quality_check',
+      processed_by: adminId,
+      processed_at: new Date()
+    }, { transaction: t });
+
+    // Create damaged inventory record if needed
+    if (damaged_quantity > 0) {
+      const orderItem = await OrderItem.findByPk(returnRequest.order_item_id);
+      await DamagedInventory.create({
+        return_request_id: id,
+        product_id: orderItem.product_id,
+        variation_id: orderItem.variation_id,
+        quantity: damaged_quantity,
+        damage_type: 'return_damage',
+        severity: condition === 'damaged' ? 'high' : 'medium',
+        disposition: disposition || 'inspect',
+        created_by: adminId
+      }, { transaction: t });
+    }
+
+    await t.commit();
+
+    return successResponse(res, 200, 'Quality check berhasil diproses');
+
+  } catch (error) {
+    await t.rollback();
+    console.error('Error in processQualityCheck:', error);
+    return errorResponse(res, 500, 'Terjadi kesalahan pada server');
+  }
+};
+
+/**
+ * Process refund (admin only)
+ * @param {object} req - Request object
+ * @param {object} res - Response object
+ * @returns {object} Response object
+ */
+const processRefund = async (req, res) => {
+  const t = await sequelize.transaction();
+
+  try {
+    const { id } = req.params;
+    const { refund_amount, refund_method, refund_notes } = req.body;
+    const adminId = req.user.id;
+
+    const returnRequest = await ReturnRequest.findByPk(id, {
+      include: [
+        {
+          model: Order,
+          as: 'order'
+        }
+      ]
+    });
+
+    if (!returnRequest) {
+      return errorResponse(res, 404, 'Permintaan pengembalian tidak ditemukan');
+    }
+
+    if (returnRequest.status !== 'quality_check') {
+      return errorResponse(res, 400, 'Status return harus quality_check untuk process refund');
+    }
+
+    // Update return status to processing
+    await returnRequest.update({
+      status: 'processing',
+      refund_amount,
+      refund_method,
+      refund_notes,
+      refund_status: 'processing',
+      processed_by: adminId,
+      processed_at: new Date()
+    }, { transaction: t });
+
+    // Call payment gateway for refund
+    const refundResult = await processPaymentRefund(returnRequest, refund_amount);
+
+    if (refundResult.success) {
+      await returnRequest.update({
+        status: 'completed',
+        refund_status: 'completed',
+        refund_reference: refundResult.refund_id,
+        completed_at: new Date()
+      }, { transaction: t });
+    } else {
+      await returnRequest.update({
+        refund_status: 'failed',
+        refund_notes: refundResult.error
+      }, { transaction: t });
+    }
+
+    await t.commit();
+
+    // Send notification to customer
+    await sendReturnStatusNotification(returnRequest, 'refund_processed');
+
+    return successResponse(res, 200, 'Refund berhasil diproses', {
+      refund_status: refundResult.success ? 'completed' : 'failed',
+      refund_reference: refundResult.refund_id
+    });
+
+  } catch (error) {
+    await t.rollback();
+    console.error('Error in processRefund:', error);
+    return errorResponse(res, 500, 'Terjadi kesalahan pada server');
+  }
+};
+
+/**
+ * Send return status notification
+ * @param {object} returnRequest - Return request object
+ * @param {string} status - New status
+ */
+const sendReturnStatusNotification = async (returnRequest, status) => {
+  try {
+    // Import notification service
+    const { sendEmail } = require('../services/notificationService');
+    
+    const user = await User.findByPk(returnRequest.user_id);
+    
+    if (!user) return;
+
+    const statusMessages = {
+      'approved': 'Return request Anda telah disetujui. Silakan kirim barang kembali.',
+      'rejected': 'Return request Anda ditolak.',
+      'item_received': 'Barang return Anda telah kami terima dan sedang dalam proses pemeriksaan.',
+      'quality_check': 'Barang Anda sedang dalam proses quality check.',
+      'processing': 'Refund Anda sedang diproses.',
+      'completed': 'Return dan refund Anda telah selesai diproses.',
+      'created': 'Return request Anda telah berhasil dibuat dan akan segera diproses.'
+    };
+
+    const message = statusMessages[status] || 'Status return Anda telah diupdate.';
+
+    // Send email notification
+    if (user.email) {
+      await sendEmail({
+        to: user.email,
+        subject: `Update Status Return - ${returnRequest.return_number}`,
+        html: `
+          <h3>Update Status Return</h3>
+          <p>Halo ${user.name},</p>
+          <p>${message}</p>
+          <p>Nomor Return: ${returnRequest.return_number}</p>
+          <p>Status: ${status}</p>
+          <br>
+          <p>Terima kasih,<br>Tim Customer Service</p>
+        `
+      });
+    }
+
+  } catch (error) {
+    console.error('Error sending notification:', error);
+  }
+};
+
+/**
+ * Process payment refund with Midtrans
+ * @param {object} returnRequest - Return request object
+ * @param {number} amount - Refund amount
+ * @returns {object} Refund result
+ */
+const processPaymentRefund = async (returnRequest, amount) => {
+  try {
+    const midtransClient = require('midtrans-client');
+    
+    const core = new midtransClient.CoreApi({
+      isProduction: process.env.NODE_ENV === 'production',
+      serverKey: process.env.MIDTRANS_SERVER_KEY,
+      clientKey: process.env.MIDTRANS_CLIENT_KEY
+    });
+
+    const parameter = {
+      refund_key: `refund-${returnRequest.return_number}-${Date.now()}`,
+      amount: amount,
+      reason: 'Return request approved'
+    };
+
+    const refundResponse = await core.refund(returnRequest.order.transaction_id, parameter);
+
+    return {
+      success: refundResponse.status_code === '200',
+      refund_id: refundResponse.refund_key,
+      error: refundResponse.status_message
+    };
+
+  } catch (error) {
+    console.error('Error processing refund:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
 module.exports = {
   checkReturnEligibility,
   createReturnRequest,
@@ -750,5 +1048,8 @@ module.exports = {
   cancelReturnRequest,
   getAllReturns,
   getReturnByIdAdmin,
-  processReturnRequest
+  processReturnRequest,
+  markItemReceived,
+  processQualityCheck,
+  processRefund
 };

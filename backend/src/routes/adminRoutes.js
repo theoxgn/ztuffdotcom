@@ -44,9 +44,19 @@ router.put('/products/:id', authenticate, isAdmin, uploadProductImage.single('im
 router.delete('/products/:id', authenticate, isAdmin, adminController.deleteProduct);
 
 // Admin returns endpoints
-const { getAllReturns, getReturnByIdAdmin, processReturnRequest } = require('../controllers/returnController');
+const { 
+  getAllReturns, 
+  getReturnByIdAdmin, 
+  processReturnRequest,
+  markItemReceived,
+  processQualityCheck,
+  processRefund
+} = require('../controllers/returnController');
 router.get('/returns', authenticate, isAdmin, getAllReturns);
 router.get('/returns/:id', authenticate, isAdmin, getReturnByIdAdmin);
 router.put('/returns/:id/process', authenticate, isAdmin, processReturnRequest);
+router.put('/returns/:id/mark-received', authenticate, isAdmin, markItemReceived);
+router.put('/returns/:id/quality-check', authenticate, isAdmin, processQualityCheck);
+router.put('/returns/:id/refund', authenticate, isAdmin, processRefund);
 
 module.exports = router; 

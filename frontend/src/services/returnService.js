@@ -26,7 +26,7 @@ api.interceptors.request.use((config) => {
  */
 export const checkReturnEligibility = async (orderId, orderItemId) => {
   try {
-    const response = await api.get(`api/returns/eligibility/${orderId}/${orderItemId}`);
+    const response = await api.get(`/returns/eligibility/${orderId}/${orderItemId}`);
     return response.data;
   } catch (error) {
     throw error.response?.data || error;
@@ -42,7 +42,7 @@ export const checkReturnEligibility = async (orderId, orderItemId) => {
  */
 export const createReturnRequest = async (orderId, orderItemId, returnData) => {
   try {
-    const response = await api.post(`api/returns/request/${orderId}/${orderItemId}`, returnData);
+    const response = await api.post(`/returns/request/${orderId}/${orderItemId}`, returnData);
     return response.data;
   } catch (error) {
     throw error.response?.data || error;
@@ -56,7 +56,7 @@ export const createReturnRequest = async (orderId, orderItemId, returnData) => {
  */
 export const getUserReturns = async (params = {}) => {
   try {
-    const response = await api.get('api/returns/my-returns', { params });
+    const response = await api.get('/returns/my-returns', { params });
     return response.data;
   } catch (error) {
     throw error.response?.data || error;
@@ -70,7 +70,7 @@ export const getUserReturns = async (params = {}) => {
  */
 export const getReturnById = async (returnId) => {
   try {
-    const response = await api.get(`api/returns/${returnId}`);
+    const response = await api.get(`/returns/${returnId}`);
     return response.data;
   } catch (error) {
     throw error.response?.data || error;
@@ -84,7 +84,7 @@ export const getReturnById = async (returnId) => {
  */
 export const getAdminReturnById = async (returnId) => {
   try {
-    const response = await api.get(`api/admin/returns/${returnId}`);
+    const response = await api.get(`/admin/returns/${returnId}`);
     return response.data;
   } catch (error) {
     console.error('Error getting admin return by ID:', error);
@@ -99,7 +99,7 @@ export const getAdminReturnById = async (returnId) => {
  */
 export const cancelReturnRequest = async (returnId) => {
   try {
-    const response = await api.put(`api/returns/${returnId}/cancel`);
+    const response = await api.put(`/returns/${returnId}/cancel`);
     return response.data;
   } catch (error) {
     throw error.response?.data || error;
@@ -115,7 +115,7 @@ export const cancelReturnRequest = async (returnId) => {
  */
 export const getAllReturns = async (params = {}) => {
   try {
-    const response = await api.get('api/admin/returns', { params });
+    const response = await api.get('/admin/returns', { params });
     return response.data;
   } catch (error) {
     throw error.response?.data || error;
@@ -130,7 +130,52 @@ export const getAllReturns = async (params = {}) => {
  */
 export const processReturnRequest = async (returnId, processData) => {
   try {
-    const response = await api.put(`api/admin/returns/${returnId}/process`, processData);
+    const response = await api.put(`/admin/returns/${returnId}/process`, processData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Mark return item as received (admin only)
+ * @param {string} returnId 
+ * @param {Object} receivedData - {admin_notes, received_date, shipping_tracking}
+ * @returns {Promise} API response
+ */
+export const markItemReceived = async (returnId, receivedData) => {
+  try {
+    const response = await api.put(`/admin/returns/${returnId}/mark-received`, receivedData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Process quality check (admin only)
+ * @param {string} returnId 
+ * @param {Object} qcData - Quality check data
+ * @returns {Promise} API response
+ */
+export const processQualityCheck = async (returnId, qcData) => {
+  try {
+    const response = await api.put(`/admin/returns/${returnId}/quality-check`, qcData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Process refund (admin only)
+ * @param {string} returnId 
+ * @param {Object} refundData - {refund_amount, refund_method, refund_notes}
+ * @returns {Promise} API response
+ */
+export const processRefund = async (returnId, refundData) => {
+  try {
+    const response = await api.put(`/admin/returns/${returnId}/refund`, refundData);
     return response.data;
   } catch (error) {
     throw error.response?.data || error;
@@ -184,6 +229,9 @@ export default {
   cancelReturnRequest,
   getAllReturns,
   processReturnRequest,
+  markItemReceived,
+  processQualityCheck,
+  processRefund,
   getReturnReasons,
   getReturnTypes,
   getRefundMethods,
